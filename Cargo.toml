@@ -1,0 +1,9 @@
+[package]
+name = "wordsmith"
+version = "0.1.0"
+authors = ["David Cao <david@cao.st>"]
+edition = "2018"
+
+[dependencies]
+snafu = "0.1"
+structopt = "0.2"
