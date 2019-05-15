@@ -3,7 +3,20 @@ name = "wordsmith"
 version = "0.1.0"
 authors = ["David Cao <david@cao.st>"]
 edition = "2018"
+description = "A speedy, simple, and extensible prose-checker"
 
 [dependencies]
-snafu = "0.1"
-structopt = "0.2"
+config = "0.9"
+clap = "2.33"
+snafu = "0.3"
+regex = "1"
+serde = { version = "1.0", features = ["derive"] }
+serde_yaml = "0.8"
+
+[lib]
+name = "wordsmith"
+path = "src/lib.rs"
+
+[[bin]]
+name = "wordsmith"
+path = "src/bin.rs"
