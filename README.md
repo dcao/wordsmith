@@ -21,3 +21,11 @@ the following design goals:
   - Be extensible. wordsmith is written in C to enable fast compilation
     via C. Thus, we can, at runtime, compile C extensions and include
     them.
+
+## Dependencies
+
+hyperscan
+
+## LICENSE
+
+MIT
