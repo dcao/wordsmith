@@ -1,20 +1,23 @@
 # wordsmith
 
-is a forthcoming prose-checking tool, with the following goals:
+is a forthcoming prose-checking tool written in C, which will follow
+the following design goals:
 
-  - Be fast. SAX-style parsing/error-reporting/etc. Avoid lots of
-    copying.
-  
-  - Allow for user customization by providing a kit to "build-your-
-    own-prose-checker," ideally like so:
-    
-    ```rust
-    fn main() {
-        wordsmith! {
-            parsers: [txt, md, org];
-            linters: [proselint, like-check, sentence-complexity];
-        }
-    }
+  - Be fast. wordsmith will use the hyperscan regex library
+
+  - Be simple. No complex config files. Prose-checking rules should
+    follow a relatively simple syntax:
+
     ```
-    
-    (impl note: parsers/ mod, linters/ mod)
+    [name?] type [severity?] [message?] payload
+    ```
+
+    Example usage:
+
+    ```
+    $ cat text.txt | ws --rules $(cat rules.txt) --ext ext2/*.c
+    ```
+
+  - Be extensible. wordsmith is written in C to enable fast compilation
+    via C. Thus, we can, at runtime, compile C extensions and include
+    them.
