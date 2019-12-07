@@ -8,8 +8,12 @@ stdenv.mkDerivation {
   version = "0.0.1";
   src = if shell then null else ./.;
   buildInputs = with pkgs; [
-      pkgconfig hyperscan tinycc
-  ] ++ stdenv.lib.optionals shell ([ gdb ]);
+    pkgconfig hyperscan tinycc
+  ] ++ stdenv.lib.optionals shell ([ gdb valgrind ]);
+
+  nativeBuildInputs = with pkgs; [
+    meson ninja
+  ];
   
   installPhase = ''
       mkdir -p $out/bin
