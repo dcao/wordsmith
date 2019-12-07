@@ -58,11 +58,6 @@ char *str_esc(char *src, char *dest) {
     return src;
 }
 
-// TODO: Regexes can have spaces tho
-// TODO: Regexes can have any delimiter tho
-// TODO: Custom parser I guess: https://stackoverflow.com/questions/12568643/strtok-and-escape-characters
-// TODO: Escaping things
-// TODO: Dealing with failure cases
 rule_t *build_rules(char *rules_txt, int *size) {
     // We first want to count the number of lines in the text; this corresponds
     // to how many rules we'll have. We filter out blank lines.
@@ -81,9 +76,6 @@ rule_t *build_rules(char *rules_txt, int *size) {
     rule_t *rules = malloc(lines * sizeof(rule_t));
 
     // After this, attempt to create a rule for each line in our rules_txt
-
-    // pstate_t is the state of the parser; either it's parsing the name, rule,
-    // message, or payload.
     char *cur  = rules_txt;
     int valid  = 0;
     int eos = 0;
@@ -184,7 +176,6 @@ rule_t *build_rules(char *rules_txt, int *size) {
 }
 
 void free_rules(rule_t *x, int cnt) {
-    // TODO
     for (int i = 0; i < cnt; i++) {
         rule_t *c = &x[i];
         free(c->name);
