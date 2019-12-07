@@ -17,7 +17,7 @@ int compare_arrs(rule_t *a, rule_t *b, int cnt) {
 
 static char *test_rule_parse_basic() {
     char x[] = "a;b;c;d\ne;f;g;h\ni;j;k;l";
-    int *cnt = malloc(sizeof(int));
+    int *cnt = calloc(1, sizeof(int));
     rule_t *y = build_rules(x, cnt);
 
     rule_t correct[] = {
@@ -36,7 +36,7 @@ static char *test_rule_parse_basic() {
 
 static char *test_rule_parse_esc() {
     char x[] = "a;b;c\\;;d\ne;f;g;h\ni;j;k;l";
-    int *cnt = malloc(sizeof(int));
+    int *cnt = calloc(1, sizeof(int));
     rule_t *y = build_rules(x, cnt);
 
     rule_t correct[] = {
@@ -53,9 +53,27 @@ static char *test_rule_parse_esc() {
     return 0;
 }
 
+static char *test_rule_parse_empty() {
+    char x[] = "a;;c\\;;d\ne;f;g;h\ni;j;k;l";
+    int *cnt = calloc(1, sizeof(int));
+    rule_t *y = build_rules(x, cnt);
+
+    rule_t correct[] = {
+        { "e", "f", "g",  "h" },
+        { "i", "j", "k",  "l" }
+    };
+
+    mu_assert("test_rule_parse_empty failed", compare_arrs(y, correct, *cnt));
+    
+    free_rules(y, *cnt);
+    free(cnt);
+    
+    return 0;
+}
+
 static char *test_rule_parse_err() {
     char x[] = "this\\;b;c;d\ne;f;g;h\ni;j;k;l";
-    int *cnt = malloc(sizeof(int));
+    int *cnt = calloc(1, sizeof(int));
     rule_t *y = build_rules(x, cnt);
 
     rule_t correct[] = {

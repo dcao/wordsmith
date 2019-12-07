@@ -32,25 +32,51 @@ int is_empty(const char *str) {
     return 1;
 }
 
+int field_size(char *src, char **end) {
+    int valid = 0;
+    while (*src != ';' && *src != '\0' && *src != '\n') {
+        switch (*src) {
+        case '\\':
+            // Possibly escaped character
+            // We'll fall into the default case anyway; if it's an escaped
+            // char, tho, we fall increment src to avoid adding the escape
+            // char
+            if (*(src+1) == '\\' || *(src+1) == RULE_DELIM || *(src+1) == '\n') {
+                src++;
+            }
+            // fall through
+        default:
+            src++;
+            valid++;
+            break;
+        }
+    }
+    *end = src;
+    return valid;
+}
+
+char *fast_forward(char *src) {
+    while (*src != '\0' && *src != '\n') {
+        src++;
+    }
+    return ++src;
+}
+
 char *str_esc(char *src, char *dest) {
     int valid_chars = 0;
-    while (*src != ';' && *src != '\0') {
+    while (*src != ';' && *src != '\0' && *src != '\n') {
         switch (*src) {
         case '\\':
             // Possibly escaped character
             // We'll fall into the default case anyway; if it's an escaped
             // char, tho, we fall increment cur to avoid adding the escape
             // char
-            if (*(src+1) == '\\' || *(src+1) == RULE_DELIM) {
+            if (*(src+1) == '\\' || *(src+1) == RULE_DELIM || *(src+1) == '\n') {
                 src++;
             }
             // fall through
         default:
-            if (*src != '\0') {
-                dest[valid_chars++] = *src;
-            } else {
-                src--;
-            }
+            dest[valid_chars++] = *src;
             break;
         }
         src++;
@@ -59,6 +85,11 @@ char *str_esc(char *src, char *dest) {
 }
 
 rule_t *build_rules(char *rules_txt, int *size) {
+    // Test our arguments for null-ity
+    if (!rules_txt || !size) {
+        return NULL;
+    }
+    
     // We first want to count the number of lines in the text; this corresponds
     // to how many rules we'll have. We filter out blank lines.
     unsigned int lines = 0;
@@ -73,98 +104,84 @@ rule_t *build_rules(char *rules_txt, int *size) {
     }
 
     // We then create our array of rules.
-    rule_t *rules = malloc(lines * sizeof(rule_t));
+    rule_t *rules = calloc(lines, sizeof(rule_t));
+    if (!rules) {
+        // Allocation failure
+        return NULL;
+    }
 
     // After this, attempt to create a rule for each line in our rules_txt
-    char *cur  = rules_txt;
+    char *cur = NULL;
+    cur = rules_txt;
     int valid  = 0;
-    int eos = 0;
     while (*cur != '\0') {
-        char *endl = strchr(cur, '\n');
         rule_t *cur_rule = &rules[valid];
-        if (!endl) {
-            endl = strchr(cur, '\0');
-            eos = 1;
-        }
-        // The end of the line is now the end of the string, for parsing
-        // purposes
-        *endl = '\0';
 
         // Attempt to parse name
-        char *end = strchr(cur, RULE_DELIM);
-        if (!end) {
-            // Missing a semicolon; too few sections
-            // We continue onwards
-            *endl = '\n';
-            cur = endl + 1;
-            if (eos) {
-                break;
-            }
+        char *end;
+        int name_size = field_size(cur, &end);
+        // if cur isn't at a delimeter at this point or it's empty, it's invalid
+        if (name_size == 0 || *end != RULE_DELIM) {
+            cur = fast_forward(cur);
             continue;
         }
-        cur_rule->name = malloc((end - cur) * sizeof(char));
-        cur = str_esc(cur, cur_rule->name) + 1;
+        cur_rule->name = calloc(name_size + 1, sizeof(char));
+        if (!cur_rule->name) {
+            // Allocation failure
+            return NULL;
+        }
+        cur = str_esc(cur, cur_rule->name);
+        cur++;
 
-        end = strchr(cur, RULE_DELIM);
-        if (!end) {
-            // Missing a semicolon; too few sections
-            // We continue onwards
-            *endl = '\n';
-            cur = endl + 1;
+        int rule_size = field_size(cur, &end);
+        if (rule_size == 0 || *end != RULE_DELIM) {
             free(cur_rule->name);
-            if (eos) {
-                break;
-            }
+            cur = fast_forward(cur);
             continue;
         }
-        cur_rule->rule = malloc((end - cur) * sizeof(char));
-        cur = str_esc(cur, cur_rule->rule) + 1;
+        cur_rule->rule = calloc(rule_size + 1, sizeof(char));
+        if (!cur_rule->rule) {
+            // Allocation failure
+            return NULL;
+        }
+        cur = str_esc(cur, cur_rule->rule);
+        cur++;
 
-        // Attempt to parse mesg
-        end = strchr(cur, RULE_DELIM);
-        if (!end) {
+        int message_size = field_size(cur, &end);
+        if (message_size == 0 || *end != RULE_DELIM) {
             // Missing a semicolon; too few sections
             // We continue onwards
-            *endl = '\n';
-            cur = endl + 1;
             free(cur_rule->rule);
             free(cur_rule->name);
-            if (eos) {
-                break;
-            }
+            cur = fast_forward(cur);
             continue;
         }
-        cur_rule->message = malloc((end - cur) * sizeof(char));
-        cur = str_esc(cur, cur_rule->message) + 1;
+        cur_rule->message = calloc(message_size + 1, sizeof(char));
+        if (!cur_rule->message) {
+            // Allocation failure
+            return NULL;
+        }
+        cur = str_esc(cur, cur_rule->message);
+        cur++;
 
-        // Attempt to parse payl
-        end = strchr(cur, RULE_DELIM);
-        // This time, we don't want too many fields, so if the
-        // delimeter exists, it's now an error case.
-        if (end) {
-            // Missing a semicolon; too few sections
-            // We continue onwards
-            *endl = '\n';
-            cur = endl + 1;
+        int payload_size = field_size(cur, &end);
+        if (payload_size == 0 || *end == RULE_DELIM) {
+            // Extra semicolon; too many sections
             free(cur_rule->message);
             free(cur_rule->rule);
             free(cur_rule->name);
-            if (eos) {
-                break;
-            }
+            cur = fast_forward(cur);
             continue;
         }
-        // We use endl instead of end, since we're going to the end of the line,
-        // not to a delim
-        cur_rule->payload = malloc((endl - cur) * sizeof(char));
-        str_esc(cur, cur_rule->payload);
-        valid++;
-        if (eos) {
-            break;
-        } else {
-            *endl = '\n';
-            cur = endl + 1;
+        cur_rule->payload = calloc(payload_size + 1, sizeof(char));
+        if (!cur_rule->payload) {
+            // Allocation failure
+            return NULL;
         }
+        cur = str_esc(cur, cur_rule->payload);
+        cur++;
+
+        valid++;
     }
 
     *size = valid;
@@ -176,6 +193,7 @@ rule_t *build_rules(char *rules_txt, int *size) {
 }
 
 void free_rules(rule_t *x, int cnt) {
+    // TODO
     for (int i = 0; i < cnt; i++) {
         rule_t *c = &x[i];
         free(c->name);
