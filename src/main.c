@@ -3,17 +3,16 @@
 #include "rules.c"
 
 int main(int argc, char **argv) {
-    char x[] = "a;b;c;d\ne;f;g;h\ni;j;k;l";
-    int *size = malloc(sizeof(int));
-    rule_t *y = build_rules(x, size);
+    char x[] = "a\\;;b;c;d\ne;f;g;h\ni;j;k;l";
+    rules_t y = build_rules(x);
 
-    for (int i = 0; i < *size; i++) {
-        rule_t r = y[i];
+    for (size_t i = 0; i < y.used; i++) {
+        rule_t r = y.array[i];
         printf("%s %s %s %s\n", r.name, r.rule, r.message, r.payload);
     }
 
-    free_rules(y, *size);
-    free(size);
-    
+    free_rules(&y);
     return 0;
 }
+
+// test

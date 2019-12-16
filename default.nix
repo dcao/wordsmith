@@ -9,7 +9,7 @@ stdenv.mkDerivation {
   src = if shell then null else ./.;
   buildInputs = with pkgs; [
     pkgconfig hyperscan tinycc
-  ] ++ stdenv.lib.optionals shell ([ gdb valgrind ]);
+  ] ++ stdenv.lib.optionals shell ([ gdb valgrind ikos ]);
 
   nativeBuildInputs = with pkgs; [
     meson ninja
