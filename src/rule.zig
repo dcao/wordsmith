@@ -14,7 +14,7 @@ const RulesError = error{
     ExtraFields,
 };
 
-pub fn field_size(txt: []const u8, ptr: *usize) usize {
+pub fn fieldSize(txt: []const u8, ptr: *usize) usize {
     var src = txt;
     var len = txt.len;
     var valid: usize = 0;
@@ -29,7 +29,7 @@ pub fn field_size(txt: []const u8, ptr: *usize) usize {
     return valid;
 }
 
-pub fn str_esc(alloc: *std.mem.Allocator, txt: []const u8, size: usize) ![]u8 {
+pub fn strEsc(alloc: *std.mem.Allocator, txt: []const u8, size: usize) ![]u8 {
     var valid: usize = 0;
     var new = try alloc.alloc(u8, size);
     var cur: usize = 0;
@@ -46,7 +46,7 @@ pub fn str_esc(alloc: *std.mem.Allocator, txt: []const u8, size: usize) ![]u8 {
     return new;
 }
 
-pub fn build_rules(alloc: *std.mem.Allocator, rules_txt: []const u8) !std.ArrayList(Rule) {
+pub fn buildRules(alloc: *std.mem.Allocator, rules_txt: []const u8) !std.ArrayList(Rule) {
     var rules = std.ArrayList(Rule).init(alloc);
     errdefer rules.deinit();
 
@@ -62,49 +62,49 @@ pub fn build_rules(alloc: *std.mem.Allocator, rules_txt: []const u8) !std.ArrayL
         };
 
         // Attempt to parse name
-        const name_size = field_size(rules_txt, &end);
+        const name_size = fieldSize(rules_txt, &end);
         if (name_size == 0) {
             return RulesError.EmptyField;
         } else if (end >= len or rules_txt[end] != ';') {
             return RulesError.MissingFields;
         }
-        rule.name = try str_esc(alloc, rules_txt[cur..end], name_size);
+        rule.name = try strEsc(alloc, rules_txt[cur..end], name_size);
         errdefer alloc.free(rule.name);
         cur = end + 1;
         end = cur;
 
         // Attempt to parse rule
-        const rule_size = field_size(rules_txt, &end);
+        const rule_size = fieldSize(rules_txt, &end);
         if (name_size == 0) {
             return RulesError.EmptyField;
         } else if (end >= len or rules_txt[end] != ';') {
             return RulesError.MissingFields;
         }
-        rule.lint = try str_esc(alloc, rules_txt[cur..end], rule_size);
+        rule.lint = try strEsc(alloc, rules_txt[cur..end], rule_size);
         errdefer alloc.free(rule.lint);
         cur = end + 1;
         end = cur;
 
         // Attempt to parse mesg
-        const mesg_size = field_size(rules_txt, &end);
+        const mesg_size = fieldSize(rules_txt, &end);
         if (name_size == 0) {
             return RulesError.EmptyField;
         } else if (end >= len or rules_txt[end] != ';') {
             return RulesError.MissingFields;
         }
-        rule.mesg = try str_esc(alloc, rules_txt[cur..end], mesg_size);
+        rule.mesg = try strEsc(alloc, rules_txt[cur..end], mesg_size);
         errdefer alloc.free(rule.mesg);
         cur = end + 1;
         end = cur;
 
         // Attempt to parse payl
-        const payl_size = field_size(rules_txt, &end);
+        const payl_size = fieldSize(rules_txt, &end);
         if (payl_size == 0) {
             return RulesError.EmptyField;
         } else if (end < len and rules_txt[end] == ';') {
             return RulesError.ExtraFields;
         }
-        rule.payl = try str_esc(alloc, rules_txt[cur..end], payl_size);
+        rule.payl = try strEsc(alloc, rules_txt[cur..end], payl_size);
         errdefer alloc.free(rule.payl);
         cur = end + 1;
         end = cur;
@@ -116,7 +116,7 @@ pub fn build_rules(alloc: *std.mem.Allocator, rules_txt: []const u8) !std.ArrayL
     return rules;
 }
 
-pub fn print_rules(rules: std.ArrayList(Rule)) void {
+pub fn printRules(rules: std.ArrayList(Rule)) void {
     var cur: usize = 0;
     while (cur < rules.len) {
         const r = rules.at(cur);
@@ -125,19 +125,19 @@ pub fn print_rules(rules: std.ArrayList(Rule)) void {
     }
 }
 
-test "str_esc" {
+test "strEsc" {
     var s = "hello\\; world";
     var c: []const u8 = "hello; world";
     var offset: usize = 0;
-    var o = str_esc(std.debug.global_allocator, s, 12) catch unreachable;
+    var o = strEsc(std.debug.global_allocator, s, 12) catch unreachable;
 
     assert(std.mem.eql(u8, c, o));
 }
 
-test "field_size" {
+test "fieldSize" {
     var s = "hello\\; world";
     var offset: usize = 0;
-    var o = field_size(s, &offset);
+    var o = fieldSize(s, &offset);
     const c = 12;
 
     assert(o == c);

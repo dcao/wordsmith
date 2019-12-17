@@ -4,6 +4,11 @@ pub fn build(b: *Builder) void {
     const mode = b.standardReleaseOptions();
     const exe = b.addExecutable("ws", "src/main.zig");
     exe.setBuildMode(mode);
+
+    exe.linkSystemLibrary("c");
+    // exe.linkSystemLibrary("libc++");
+    exe.linkSystemLibrary("libhs");
+
     exe.install();
 
     const run_cmd = exe.run();

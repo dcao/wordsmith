@@ -9,37 +9,56 @@ pub const SinkError = error {
 };
 
 pub const Sink = struct {
-    handle: fn(self: *Sink, lint: Lint) SinkError!void
+    handleFn: fn(s: *Sink, lint: Lint) SinkError!void,
+
+    pub fn handle(self: *Sink, lint: Lint) SinkError!void {
+        return self.handleFn(self, lint);
+    }
 };
 
 // An example Sink that does nothing with Lints:
 pub const NoopSink = struct {
-    sink: Sink = Sink{.handle = handle},
+    sink: Sink = Sink{.handleFn = handle},
     
     pub fn handle(s: *Sink, l: Lint) SinkError!void {}
 };
 
 // An example Sink which collects everything in an ArrayList:
 pub const ALSink = struct {
-    // Assume a third party is responsible for allocation
+    alloc: *std.mem.Allocator,
     al: std.ArrayList(Lint),
-    sink: Sink = Sink{.handle = handle},
+    sink: Sink = Sink{.handleFn = handle},
 
-    pub fn handle(s: *Sink, l: Lint) SinkError!void {
+    pub fn init(alloc: *std.mem.Allocator) ALSink {
+        return ALSink {
+            .alloc = alloc,
+            .al = std.ArrayList(Lint).init(alloc)
+        };
+    }
+
+    fn handle(s: *Sink, l: Lint) SinkError!void {
         const self = @fieldParentPtr(ALSink, "sink", s);
-        _ = self.al.append(l) catch return SinkError.AllocError;
+        self.al.append(l) catch return SinkError.AllocError;
+    }
+
+    pub fn deinit(self: ALSink) void {
+        self.al.deinit();
     }
 };
     
 test "ALSink works" {
     var f: []const u8 = "";
-    const rs = try rule.build_rules(std.heap.direct_allocator, f);
+    const rs = try rule.buildRules(std.heap.direct_allocator, f);
     defer rs.deinit();
 
-    rule.print_rules(rs);
+    rule.printRules(rs);
 
-    var al = std.ArrayList(Lint).init(std.heap.direct_allocator);
-    const rl = lint.regex.RegexLinter;
-    var sink = ALSink{.al = al};
-    const lints = rl.report(rs, sink.sink);
+    const prose = "";
+
+    var sink = ALSink.init(std.heap.direct_allocator);
+    defer sink.deinit();
+    
+    var rl = lint.RegexLinter.init(std.heap.direct_allocator);
+    defer rl.deinit();
+    const lints = rl.linter.report(rs.toSlice(), prose, sink.sink);
 }
