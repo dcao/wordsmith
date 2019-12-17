@@ -8,15 +8,15 @@ stdenv.mkDerivation {
   version = "0.0.1";
   src = if shell then null else ./.;
   buildInputs = with pkgs; [
-    pkgconfig hyperscan tinycc
-  ] ++ stdenv.lib.optionals shell ([ gdb valgrind ikos ]);
+    pkgconfig hyperscan
+  ] ++ stdenv.lib.optionals shell ([ gdb valgrind ]);
 
   nativeBuildInputs = with pkgs; [
-    meson ninja
+    zig
   ];
   
   installPhase = ''
       mkdir -p $out/bin
-      cp wordsmith $out/bin
+      cp ws $out/bin
   '';
 }
