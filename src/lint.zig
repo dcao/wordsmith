@@ -1,4 +1,3 @@
-const std = @import("std");
 const rule = @import("rule.zig");
 const Sink = @import("sink.zig").Sink;
 

@@ -20,7 +20,7 @@ pub const RegexLinter = struct {
     fn report_lint(l: *Linter, rules: []const Rule, prose: []const u8, sink: Sink) LintError!void {
         // Compile our regexes
         // const regexes = [0][*]const u8{};
-        _ = c.hs_compile_multi;
+        // _ = c.hs_compile_multi;
     }
 
     fn deinit(self: RegexLinter) void {}

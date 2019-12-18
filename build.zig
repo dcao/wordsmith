@@ -4,7 +4,7 @@ const mem = @import("std").mem;
 const fs = @import("std").fs;
 const warn = @import("std").debug.warn;
 
-pub fn build(b: *Builder) !void {
+pub fn build(b: *Builder) anyerror!void {
     const mode = b.standardReleaseOptions();
     const exe = b.addExecutable("ws", "src/main.zig");
     exe.setBuildMode(mode);
