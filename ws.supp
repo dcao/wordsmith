@@ -1,0 +1,22 @@
+#
+# This is a suppression file for Valgrind which silences known false positives.
+# It should generally be used on any Valgrind incantation with the
+# --suppressions={path to this file} cli flag.
+#
+
+# This suppression accounts for the emergency memory pool allocated by
+# libstdc++. It's never deallocated by design; thus, Valgrind sees it as a
+# (false) memory leak.
+#
+# For more info, see:
+# https://stackoverflow.com/questions/32933301/valgrind-and-stdunique-ptr-false-positive-or-not
+# https://bugs.kde.org/show_bug.cgi?id=345307
+{
+   libstdc++_emergency_mem_pool
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   fun:_GLOBAL__sub_I_eh_alloc.cc
+   fun:__libc_csu_init
+   fun:(below main)
+}

@@ -1,4 +1,4 @@
-const alloc = @import("std").heap.direct_allocator;
+const alloc = @import("std").heap.c_allocator;
 const lint = @import("lint.zig");
 const rule = @import("rule.zig");
 const sink = @import("sink.zig");
@@ -6,7 +6,7 @@ const sink = @import("sink.zig");
 pub fn main() anyerror!void {
     var f: []const u8 = "yeet;yah;yar;yeet";
     const rs = try rule.buildRules(alloc, f);
-    defer rs.deinit();
+    defer rule.freeRules(alloc, rs);
 
     rule.printRules(rs);
 

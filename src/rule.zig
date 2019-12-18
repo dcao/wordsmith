@@ -46,9 +46,20 @@ pub fn strEsc(alloc: *std.mem.Allocator, txt: []const u8, size: usize) ![]u8 {
     return new;
 }
 
+pub fn freeRules(alloc: *std.mem.Allocator, rules: std.ArrayList(Rule)) void {
+    for (rules.toSlice()) |r| {
+        alloc.free(r.name);
+        alloc.free(r.lint);
+        alloc.free(r.mesg);
+        alloc.free(r.payl);
+    }
+    rules.deinit();
+}
+
+
 pub fn buildRules(alloc: *std.mem.Allocator, rules_txt: []const u8) !std.ArrayList(Rule) {
     var rules = std.ArrayList(Rule).init(alloc);
-    errdefer rules.deinit();
+    errdefer freeRules(alloc, rules);
 
     var cur: usize = 0;
     var end: usize = cur;
