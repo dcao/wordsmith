@@ -8,7 +8,7 @@ static char *all_tests() {
     mu_run_test(test_rule_parse_basic);
     mu_run_test(test_rule_parse_esc);
     mu_run_test(test_rule_parse_empty);
-    // mu_run_test(test_rule_parse_err);
+    mu_run_test(test_rule_parse_extra);
     return 0;
 }
 
