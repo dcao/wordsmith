@@ -4,7 +4,7 @@ const rule = @import("rule.zig");
 const sink = @import("sink.zig");
 
 pub fn main() anyerror!void {
-    var f: []const u8 = "yeet;yah;yar;yeet";
+    var f: []const u8 = "this is a test;regex;wrong thing;xyz";
     const rs = try rule.buildRules(alloc, f);
     defer rule.freeRules(alloc, rs);
 

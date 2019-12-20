@@ -4,14 +4,10 @@ const std = @import("std");
 const rule = @import("rule.zig");
 const lint = @import("lint.zig");
 
-pub const SinkError = error {
-    AllocError,
-};
-
 pub const Sink = struct {
-    handleFn: fn(s: *Sink, lint: Lint) SinkError!void,
+    handleFn: fn(s: *Sink, lint: Lint) anyerror!void,
 
-    pub fn handle(self: *Sink, lint: Lint) SinkError!void {
+    pub fn handle(self: *Sink, lint: Lint) anyerror!void {
         return self.handleFn(self, lint);
     }
 };
@@ -20,7 +16,7 @@ pub const Sink = struct {
 pub const NoopSink = struct {
     sink: Sink = Sink{.handleFn = handle},
     
-    pub fn handle(s: *Sink, l: Lint) SinkError!void {}
+    pub fn handle(s: *Sink, l: Lint) anyerror!void {}
 };
 
 // An example Sink which collects everything in an ArrayList:
@@ -36,9 +32,9 @@ pub const ALSink = struct {
         };
     }
 
-    fn handle(s: *Sink, l: Lint) SinkError!void {
+    fn handle(s: *Sink, l: Lint) anyerror!void {
         const self = @fieldParentPtr(ALSink, "sink", s);
-        self.al.append(l) catch return SinkError.AllocError;
+        try self.al.append(l);
     }
 
     pub fn deinit(self: ALSink) void {
