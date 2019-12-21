@@ -10,10 +10,11 @@ pub fn main() anyerror!void {
 
     rule.printRules(rs);
 
-    const prose = "";
-    
+    const text = "xyzyahxyz";
+    const prose = text[0..];
+
     var rl = lint.RegexLinter.init(alloc);
     defer rl.deinit();
-    const s = sink.NoopSink{};
-    const lints = rl.linter.report(rs.toSlice(), prose, s.sink);
+    const s = sink.StderrSink{};
+    const lints = try rl.linter.report(rs.toSlice(), prose, s.sink);
 }

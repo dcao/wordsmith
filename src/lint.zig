@@ -4,10 +4,10 @@ const Sink = @import("sink.zig").Sink;
 pub const RegexLinter = @import("lint/regex.zig").RegexLinter;
 
 pub const Lint = struct {
-    text: []u8,
-    line: usize,
-    col: usize,
-    rule: *rule.Rule,
+    prose: []u8,
+    line: u64,
+    col: u64,
+    rule: *const rule.Rule,
 };
 
 // TODO: Parameterize error type?

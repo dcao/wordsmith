@@ -2,7 +2,6 @@ const Lint = @import("lint.zig").Lint;
 
 const std = @import("std");
 const rule = @import("rule.zig");
-const lint = @import("lint.zig");
 
 pub const Sink = struct {
     handleFn: fn(s: *Sink, lint: Lint) anyerror!void,
@@ -17,6 +16,15 @@ pub const NoopSink = struct {
     sink: Sink = Sink{.handleFn = handle},
     
     pub fn handle(s: *Sink, l: Lint) anyerror!void {}
+};
+
+// An example Sink that just prints them out to stderr
+pub const StderrSink = struct {
+    sink: Sink = Sink{.handleFn = handle},
+    
+    pub fn handle(s: *Sink, l: Lint) anyerror!void {
+        std.debug.warn("{}\n", l);
+    }
 };
 
 // An example Sink which collects everything in an ArrayList:
