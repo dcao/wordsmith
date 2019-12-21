@@ -80,8 +80,10 @@ pub const RegexLinter = struct {
         const self = @fieldParentPtr(RegexLinter, "linter", l);
         self.rules = rules;
         // Compile our regexes
-        var regexes = std.ArrayList([]const u8).init(self.alloc);
-        defer self.deinitRegexes(regexes);
+        var rlens = std.ArrayList(usize).init(self.alloc);
+        defer rlens.deinit();
+        var regexes = std.ArrayList([*]const u8).init(self.alloc);
+        defer self.deinitRegexes(regexes, rlens.toSliceConst());
         try regexes.ensureCapacity(rules.len);
         var ids = std.ArrayList(u32).init(self.alloc);
         defer ids.deinit();
@@ -93,7 +95,8 @@ pub const RegexLinter = struct {
                 std.mem.copy(u8, new_str, r.payl);
                 new_str[r.payl.len] = 0;
                 try ids.append(cur);
-                try regexes.append(new_str);
+                try rlens.append(new_str.len);
+                try regexes.append(@ptrCast([*]const u8, new_str.ptr));
             }
 
             cur += 1;
@@ -130,9 +133,12 @@ pub const RegexLinter = struct {
         }
     }
 
-    fn deinitRegexes(self: *RegexLinter, rs: std.ArrayList([]const u8)) void {
-        for (rs.toSlice()) |r| {
-            self.alloc.free(r);
+    fn deinitRegexes(self: *RegexLinter, rs: std.ArrayList([*]const u8), rlens: []const usize) void {
+        var cur: usize = 0;
+        while (cur < rs.len) {
+            const r = rs.at(cur);
+            self.alloc.free(r[0..rlens[cur]]);
+            cur += 1;
         }
         rs.deinit();
     }

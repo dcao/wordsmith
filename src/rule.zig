@@ -65,6 +65,12 @@ pub fn buildRules(alloc: *std.mem.Allocator, rules_txt: []const u8) !std.ArrayLi
     var end: usize = cur;
     const len = rules_txt.len;
     while (cur < len) {
+        // If we have a blank line, just keep goin
+        if (rules_txt[cur] == '\n') {
+            cur += 1;
+            continue;
+        }
+
         var rule = Rule{
             .name = undefined,
             .lint = undefined,
@@ -121,7 +127,6 @@ pub fn buildRules(alloc: *std.mem.Allocator, rules_txt: []const u8) !std.ArrayLi
         end = cur;
 
         try rules.append(rule);
-        break;
     }
 
     return rules;
