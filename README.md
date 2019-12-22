@@ -23,6 +23,13 @@ design goals:
   - Be extensible. wordsmith is structured to make adding custom lints
     relatively straightforward. In the future, wordsmith will also
     be able to dynamically load object files with extra lints defined.
+    
+## Caveats
+
+Due to a [limitation in the Zig build process](https://github.com/ziglang/zig/issues/3965),
+a regular `zig build` will result in a binary that terminates whenever
+encountering a non-literal regex pattern. To avoid this problem, you
+must relink with the `--eh-frame-hdr` argument.
 
 ## Dependencies
 

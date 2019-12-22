@@ -156,6 +156,8 @@ fn linkStdCpp(b: *Builder, exe: var, ctx: Context) !void {
             \\On Fedora, install libstdc++-static and try again.
         );
 
+        // exe.linkSystemLibrary("gcc_eh");
+
         exe.linkSystemLibrary("pthread");
     } else if (exe.target.isFreeBSD()) {
         try addCxxKnownPath(b, ctx, exe, "libc++.a", null);

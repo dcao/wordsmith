@@ -24,8 +24,6 @@ pub fn main() anyerror!u8 {
 
     const BufInStream = io.BufferedInStream(fs.File.InStream.Error);
     if (args.file) |path| {
-        defer alloc.free(args.file.?);
-
         const cwd = try process.getCwdAlloc(alloc);
         defer alloc.free(cwd);
         var dir = try fs.Dir.open(alloc, cwd);

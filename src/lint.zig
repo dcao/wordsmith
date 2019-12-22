@@ -4,7 +4,7 @@ const Sink = @import("sink.zig").Sink;
 pub const RegexLinter = @import("lint/regex.zig").RegexLinter;
 
 pub const Lint = struct {
-    prose: []u8,
+    offset: u64,
     line: u64,
     col: u64,
     rule: *const rule.Rule,

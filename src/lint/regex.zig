@@ -68,7 +68,7 @@ pub const RegexLinter = struct {
             }
             cur += 1;
         }
-        const l = Lint{ .prose = self.prose[from..to], .line = line, .col = column, .rule = &self.rules[id] };
+        const l = Lint{ .offset = to, .line = line, .col = column, .rule = &self.rules[id] };
         self.sink.handle(l) catch |e| {
             self.err = e;
             return 1;
@@ -108,7 +108,8 @@ pub const RegexLinter = struct {
         const rs = @ptrCast([*c]const [*c]const u8, regexes.toSliceConst().ptr);
         const nrs = @intCast(c_uint, regexes.len);
         const ids_ptr = @ptrCast([*c]const c_uint, ids.toSliceConst().ptr);
-        const comp_err = c.hs_compile_multi(rs, null, ids_ptr, nrs, c.HS_MODE_BLOCK, null, &db, err_ptr);
+        const flags = [1]c_uint{ c.HS_FLAG_DOTALL };
+        const comp_err = c.hs_compile_multi(rs, &flags, ids_ptr, nrs, c.HS_MODE_BLOCK, null, &db, err_ptr);
         if (comp_err != c.HS_SUCCESS) {
             _ = c.hs_free_compile_error(err);
             return hsConvertErr(comp_err);
