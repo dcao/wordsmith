@@ -5,8 +5,9 @@ const c = @cImport({
 const std = @import("std");
 const Lint = @import("../lint.zig").Lint;
 const Linter = @import("../lint.zig").Linter;
-const Sink = @import("../sink.zig").Sink;
+const Prose = @import("../prose.zig").Prose;
 const Rule = @import("../rule.zig").Rule;
+const Sink = @import("../sink.zig").Sink;
 
 pub const RegexLinterError = error{
     Invalid,
@@ -46,9 +47,15 @@ pub const RegexLinter = struct {
     alloc: *std.mem.Allocator,
     linter: Linter = Linter{ .reportFn = reportLint },
     sink: Sink = undefined,
-    prose: []const u8 = undefined,
+    prose: Prose = undefined,
     rules: []const Rule = undefined,
+    linums: []Linum = undefined,
     err: anyerror = undefined,
+
+    const Linum = struct {
+        line: u32,
+        col: u32,
+    };
 
     pub fn init(alloc: *std.mem.Allocator) RegexLinter {
         return RegexLinter{ .alloc = alloc };
@@ -56,19 +63,13 @@ pub const RegexLinter = struct {
 
     extern fn eventHandler(id: c_uint, from: c_ulonglong, to: c_ulonglong, flags: c_uint, ctx: ?*c_void) c_int {
         const self = @ptrCast(*RegexLinter, @alignCast(8, ctx));
-        var line: u64 = 1;
-        var column: u64 = 0;
-        var cur: u64 = 0;
-        while (cur < to) {
-            if (self.prose[cur] == '\n') {
-                line += 1;
-                column = 1;
-            } else {
-                column += 1;
-            }
-            cur += 1;
-        }
-        const l = Lint{ .offset = to, .line = line, .col = column, .rule = &self.rules[id] };
+        const l = Lint{
+            .offset = to,
+            .line = self.linums[to].line,
+            .col = self.linums[to].col,
+            .prose = self.prose,
+            .rule = &self.rules[id],
+        };
         self.sink.handle(l) catch |e| {
             self.err = e;
             return 1;
@@ -76,7 +77,41 @@ pub const RegexLinter = struct {
         return 0;
     }
 
-    fn reportLint(l: *Linter, rules: []const Rule, prose: []const u8, sink: Sink) anyerror!void {
+    /// Turning a byte offset into a line and column number can be massively
+    /// unperformant; thus, we store all of the line and column numbers for
+    /// every possible offset into our string in a slice.
+    ///
+    /// Given input prose size n, our memory complexity is O(n) but our
+    /// time complexity to retrieve the line/col of a match is O(1).
+    /// Since memory is relatively cheap compared to time, we use this
+    /// solution.
+    ///
+    /// Alternatively, the linums slice could be simply a list of byte
+    /// offsets corresponding to newlines; this would mean O(log n)
+    /// memory and time complexity.
+    ///
+    /// In the future this process could likely be further sped up via
+    /// SIMD instructions; however, this is unsupported by Zig at this
+    /// time.
+    fn buildLinums(self: *RegexLinter) !void {
+        self.linums = try self.alloc.alloc(Linum, self.prose.text.len);
+        var cur: u64 = 0;
+        var line: u32 = 1;
+        var col: u32 = 0;
+        while (cur < self.prose.text.len) {
+            if (self.prose.text[cur] == '\n') {
+                line += 1;
+                col = 1;
+            } else {
+                col += 1;
+            }
+            self.linums[cur] = Linum{ .line = line, .col = col };
+
+            cur += 1;
+        }
+    }
+
+    fn reportLint(l: *Linter, rules: []const Rule, prose: Prose, sink: Sink) anyerror!void {
         const self = @fieldParentPtr(RegexLinter, "linter", l);
         self.rules = rules;
         // Compile our regexes
@@ -128,7 +163,9 @@ pub const RegexLinter = struct {
         self.sink = sink;
         self.prose = prose;
 
-        const scan_err = c.hs_scan(db, @ptrCast([*c]const u8, prose.ptr), @intCast(c_uint, prose.len), 0, scratch, eventHandler, self);
+        try self.buildLinums();
+
+        const scan_err = c.hs_scan(db, @ptrCast([*c]const u8, prose.text.ptr), @intCast(c_uint, prose.text.len), 0, scratch, eventHandler, self);
         if (scan_err == c.HS_SCAN_TERMINATED) {
             return self.err;
         } else if (scan_err != c.HS_SUCCESS) {
@@ -150,5 +187,8 @@ pub const RegexLinter = struct {
         self.sink = undefined;
         self.prose = undefined;
         self.rules = undefined;
+
+        self.alloc.free(self.linums);
+        self.linums = undefined;
     }
 };

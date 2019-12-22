@@ -31,6 +31,13 @@ a regular `zig build` will result in a binary that terminates whenever
 encountering a non-literal regex pattern. To avoid this problem, you
 must relink with the `--eh-frame-hdr` argument.
 
+## Roadmap
+
+  - [ ] Performance
+  - [ ] Support multiple files
+  - [ ] More built-in lints
+  - [ ] Easy extensibility
+
 ## Dependencies
 
   - hyperscan

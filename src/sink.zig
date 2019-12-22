@@ -18,12 +18,12 @@ pub const NoopSink = struct {
     pub fn handle(s: *Sink, l: Lint) anyerror!void {}
 };
 
-// An example Sink that just prints them out to stderr
+// A Sink that prints results to stderr
 pub const StderrSink = struct {
     sink: Sink = Sink{.handleFn = handle},
     
     pub fn handle(s: *Sink, l: Lint) anyerror!void {
-        std.debug.warn("{}\n", l);
+        std.debug.warn("{}:{}:{} {}:{}\n", l.prose.name, l.line, l.col, l.rule.name, l.rule.mesg);
     }
 };
 

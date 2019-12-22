@@ -4,6 +4,7 @@ const io = @import("std").io;
 const fs = @import("std").fs;
 const process = @import("std").process;
 const lint = @import("lint.zig");
+const Prose = @import("prose.zig").Prose;
 const rule = @import("rule.zig");
 const sink = @import("sink.zig");
 const argparse = @import("cli/argparse.zig").parseArgs;
@@ -19,8 +20,11 @@ pub fn main() anyerror!u8 {
     const args = try argparse(Args);
     defer alloc.free(args.rules);
 
-    var prose: []u8 = undefined;
-    defer alloc.free(prose);
+    const name_stdin = "stdin";
+    
+    var text: []const u8 = undefined;
+    var name: []u8 = [_]u8{};
+    defer alloc.free(text);
 
     const BufInStream = io.BufferedInStream(fs.File.InStream.Error);
     if (args.file) |path| {
@@ -33,13 +37,20 @@ pub fn main() anyerror!u8 {
 
         const file_limit = 2000000000;
         const inst = &BufInStream.init(&f.inStream().stream).stream;
-        prose = try inst.readAllAlloc(alloc, file_limit);
+        text = try inst.readAllAlloc(alloc, file_limit);
+        name = try alloc.alloc(u8, path.len);
+        copy(u8, name, path);
     } else {
         const stdin = &BufInStream.init(&(try io.getStdIn()).inStream().stream).stream;
 
         const stdin_limit = 1000000000;
-        prose = try stdin.readAllAlloc(alloc, stdin_limit);
+        text = try stdin.readAllAlloc(alloc, stdin_limit);
+        // TODO: This prolly isn't necessary but...
+        name = try alloc.alloc(u8, 5);
+        copy(u8, name, name_stdin);
     }
+
+    const prose = Prose{.text = text, .name = name};
 
     var rules: []u8 = [_]u8{};
     defer alloc.free(rules);
