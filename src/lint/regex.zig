@@ -108,9 +108,11 @@ pub const RegexLinter = struct {
         const rs = @ptrCast([*c]const [*c]const u8, regexes.toSliceConst().ptr);
         const nrs = @intCast(c_uint, regexes.len);
         const ids_ptr = @ptrCast([*c]const c_uint, ids.toSliceConst().ptr);
-        const flags = [1]c_uint{ c.HS_FLAG_DOTALL };
-        const comp_err = c.hs_compile_multi(rs, &flags, ids_ptr, nrs, c.HS_MODE_BLOCK, null, &db, err_ptr);
+        const comp_err = c.hs_compile_multi(rs, null, ids_ptr, nrs, c.HS_MODE_BLOCK, null, &db, err_ptr);
         if (comp_err != c.HS_SUCCESS) {
+            if (comp_err == c.HS_COMPILER_ERROR) {
+                std.debug.warn("{}", err);
+            }
             _ = c.hs_free_compile_error(err);
             return hsConvertErr(comp_err);
         }
