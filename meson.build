@@ -1,4 +1,4 @@
-project('wordsmith', 'c')
+project('wordsmith', 'c', version : '0.1.0')
 hs = dependency('libhs')
 executable('ws', 'src/main.c', dependencies : hs)
 test_bin = executable('ws-test', 'test/test.c', dependencies : hs)

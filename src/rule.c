@@ -1,27 +1,8 @@
 #include <stdlib.h>
 #include <string.h>
+#include "ws.h"
 
 #define RULE_DELIM ';'
-
-typedef struct {
-    char *name;
-    char *rule;
-    char *mesg;
-    char *payl;
-} rule_t;
-
-typedef struct {
-    rule_t *array;
-    size_t used;
-    size_t size;
-} rules_t;
-
-typedef enum {
-    RULES_OK,
-    NULL_RULES,
-    RULE_ALLOC,
-    INVALID_RULE,
-} rule_error_t;
 
 void init_rules(rules_t *a, size_t initial_size) {
     a->array = malloc(initial_size * sizeof(rule_t));
@@ -33,22 +14,22 @@ void insert_rule(rules_t *a, rule_t element) {
     // a->used is the number of used entries, because a->array[a->used++] updates a->used only *after* the array has been accessed.
     // Therefore a->used can go up to a->size 
     if (a->used == a->size) {
-        a->size *= 3 / 2;
+        a->size *= 2;
         a->array = realloc(a->array, a->size * sizeof(rule_t));
     }
     a->array[a->used++] = element;
 }
 
-int field_size(char *src, char **end) {
+int field_size(char delim, char *src, char **end) {
     int valid = 0;
-    while (*src != RULE_DELIM && *src != '\0' && *src != '\n') {
+    while (*src != delim && *src != '\0' && *src != '\n') {
         switch (*src) {
         case '\\':
             // Possibly escaped character
             // We'll fall into the default case anyway; if it's an escaped
             // char, tho, we fall increment src to avoid adding the escape
             // char
-            if (*(src+1) == '\\' || *(src+1) == RULE_DELIM || *(src+1) == '\n') {
+            if (*(src+1) == '\\' || *(src+1) == delim || *(src+1) == '\n') {
                 src++;
             }
             // fall through
@@ -62,16 +43,16 @@ int field_size(char *src, char **end) {
     return valid;
 }
 
-void str_esc(char **src, char *dest) {
+void str_esc(char delim, char **src, char *dest) {
     int valid_chars = 0;
-    while (**src != RULE_DELIM && **src != '\0' && **src != '\n') {
+    while (**src != delim && **src != '\0' && **src != '\n') {
         switch (**src) {
         case '\\':
             // Possibly escaped character
             // We'll fall into the default case anyway; if it's an escaped
             // char, tho, we fall increment cur to avoid adding the escape
             // char
-            if (*(*src+1) == '\\' || *(*src+1) == RULE_DELIM || *(*src+1) == '\n') {
+            if (*(*src+1) == '\\' || *(*src+1) == delim || *(*src+1) == '\n') {
                 (*src)++;
             }
             // fall through
@@ -95,7 +76,7 @@ void free_rules(rules_t *x) {
     x->used = x->size = 0;
 }
 
-rule_error_t build_rules(char *rules_txt, rules_t *rules) {
+rule_error_t build_rules(char delim, char *rules_txt, rules_t *rules) {
     init_rules(rules, 16);
 
     // Test our arguments for null-ity
@@ -115,9 +96,9 @@ rule_error_t build_rules(char *rules_txt, rules_t *rules) {
 
         // Attempt to parse name
         char *end;
-        int name_size = field_size(cur, &end);
+        int name_size = field_size(delim, cur, &end);
         // if cur isn't at a delimeter at this point or it's empty, it's invalid
-        if (name_size == 0 || *end != RULE_DELIM) {
+        if (name_size == 0 || *end != delim) {
             err = INVALID_RULE;
             goto free_rules;
         }
@@ -127,11 +108,11 @@ rule_error_t build_rules(char *rules_txt, rules_t *rules) {
             err = RULE_ALLOC;
             goto free_rules;
         }
-        str_esc(&cur, cur_rule.name);
+        str_esc(delim, &cur, cur_rule.name);
         cur++;
 
-        int rule_size = field_size(cur, &end);
-        if (rule_size == 0 || *end != RULE_DELIM) {
+        int rule_size = field_size(delim, cur, &end);
+        if (rule_size == 0 || *end != delim) {
             err = INVALID_RULE;
             goto free_name;
         }
@@ -141,11 +122,11 @@ rule_error_t build_rules(char *rules_txt, rules_t *rules) {
             err = RULE_ALLOC;
             goto free_name;
         }
-        str_esc(&cur, cur_rule.rule);
+        str_esc(delim, &cur, cur_rule.rule);
         cur++;
 
-        int message_size = field_size(cur, &end);
-        if (message_size == 0 || *end != RULE_DELIM) {
+        int message_size = field_size(delim, cur, &end);
+        if (message_size == 0 || *end != delim) {
             // Missing a semicolon; too few sections
             // We continue onwards
             err = INVALID_RULE;
@@ -157,11 +138,11 @@ rule_error_t build_rules(char *rules_txt, rules_t *rules) {
             err = RULE_ALLOC;
             goto free_rule;
         }
-        str_esc(&cur, cur_rule.mesg);
+        str_esc(delim, &cur, cur_rule.mesg);
         cur++;
 
-        int payload_size = field_size(cur, &end);
-        if (payload_size == 0 || *end == RULE_DELIM) {
+        int payload_size = field_size(delim, cur, &end);
+        if (payload_size == 0 || *end == delim) {
             // Extra semicolon; too many sections
             err = INVALID_RULE;
             goto free_mesg;
@@ -172,7 +153,7 @@ rule_error_t build_rules(char *rules_txt, rules_t *rules) {
             err = RULE_ALLOC;
             goto free_mesg;
         }
-        str_esc(&cur, cur_rule.payl);
+        str_esc(delim, &cur, cur_rule.payl);
         cur++;
 
         insert_rule(rules, cur_rule);

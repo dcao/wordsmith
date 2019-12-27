@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "minunit.h"
-#include "../src/rules.c"
+#include "../src/rule.c"
 
 int compare_rules(rules_t fst, rules_t snd) {
     for (size_t i = 0; i < fst.used; i++) {
@@ -20,7 +20,7 @@ int compare_rules(rules_t fst, rules_t snd) {
 static char *test_rule_parse_basic() {
     char x[] = "a;b;c;d\ne;f;g;h\ni;j;k;l\0";
     rules_t y;
-    rule_error_t res = build_rules(x, &y);
+    rule_error_t res = build_rules(';', x, &y);
 
     rule_t corrules[] = {
         { "a", "b", "c", "d" },
@@ -41,7 +41,7 @@ static char *test_rule_parse_basic() {
 static char *test_rule_parse_esc() {
     char x[] = "a;b;c\\;;d\ne;f;g;h\ni;j;k;l\0";
     rules_t y;
-    rule_error_t res = build_rules(x, &y);
+    rule_error_t res = build_rules(';', x, &y);
 
     rule_t corrules[] = {
         { "a", "b", "c;", "d" },
@@ -62,7 +62,7 @@ static char *test_rule_parse_esc() {
 static char *test_rule_parse_empty() {
     char x[] = "a;;c\\;;d\ne;f;g;h\ni;j;k;l\0";
     rules_t y;
-    rule_error_t res = build_rules(x, &y);
+    rule_error_t res = build_rules(';', x, &y);
 
     mu_assert("test_rule_parse_empty failed", res == INVALID_RULE);
     
@@ -72,7 +72,7 @@ static char *test_rule_parse_empty() {
 static char *test_rule_parse_extra() {
     char x[] = "this\\;b;c;d;\ne;f;g;h\ni;j;k;l\0";
     rules_t y;
-    rule_error_t res = build_rules(x, &y);
+    rule_error_t res = build_rules(';', x, &y);
 
     mu_assert("test_rule_parse_extra failed", res == INVALID_RULE);
     
