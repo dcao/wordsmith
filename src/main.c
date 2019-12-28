@@ -67,36 +67,40 @@ int main(int argc, char **argv) {
     rules_t rules;
     rule_error_t res = build_rules(';', rbuf, &rules);
 
+    int err = 0;
     if (res != RULES_OK) {
         fprintf(stderr, "%s\n", xstr(err));
-        free_rules(&rules);
-        exit(EXIT_FAILURE);
+        err = 1;
+        goto free_rules;
     }
 
     int fs = 0;
+
+    sink_t sink = stderr_sink;
+    linter_t linter = regex_linter();
+    if (linter_init(&linter, &rules, sink) != 0) {
+        err = 1;
+        goto free_rules;
+    }
+
     // Deal with remaining files
     while ((arg = optparse_arg(&options))) {
         fs |= 1;
         unsigned int len;
         char *file = read_file(arg, &len);
         if (!file) {
-            free_rules(&rules);
-            exit(EXIT_FAILURE);
+            err = 1;
+            goto linter_deinit;
         }
         prose_t prose = { file, arg };
 
-        sink_t sink = stderr_sink;
-        linter_t linter = regex_linter();
-
-        int fin = linter_report(&linter, &rules, prose, sink);
-
-        free(linter.ctx);
+        int fin = linter_report(&linter, prose);
         
         free(file);
 
         if (fin != 0) {
-            free_rules(&rules);
-            exit(EXIT_FAILURE);
+            err = 1;
+            goto linter_deinit;
         }
     }
 
@@ -117,20 +121,23 @@ int main(int argc, char **argv) {
 
         prose_t prose = { input, name };
 
-        sink_t sink = stderr_sink;
-        linter_t linter = regex_linter();
-
-        int fin = linter_report(&linter, &rules, prose, sink);
-
-        free(linter.ctx);
+        int fin = linter_report(&linter, prose);
 
         if (fin != 0) {
-            free_rules(&rules);
-            exit(EXIT_FAILURE);
+            err = 1;
+            goto linter_deinit;
         }
     }
 
+
+linter_deinit:
+    linter_deinit(&linter);
+free_rules:
     free_rules(&rules);
-    exit(EXIT_SUCCESS);
+    if (err == 0) {
+        exit(EXIT_SUCCESS);
+    } else {
+        exit(EXIT_FAILURE);
+    }
 }
 

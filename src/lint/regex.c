@@ -10,15 +10,16 @@ typedef struct {
 typedef struct {
     rules_t *rules;
     prose_t *prose;
-    sink_t *sink;
+    sink_t sink;
     linum *linums;
+    hs_database_t *db;
 } regex_linter_ctx_t;
 
 int handle_match(unsigned id, unsigned long long from, unsigned long long to,
                  unsigned flags, void *ctx) {
     regex_linter_ctx_t *self = (regex_linter_ctx_t *)ctx;
     lint_t l = { to, self->linums[to].l, self->linums[to].c, *self->prose, self->rules->array[id] };
-    sink_handle(self->sink, l);
+    sink_handle(&self->sink, l);
 
     return 0;
 }
@@ -44,9 +45,11 @@ int build_linums(regex_linter_ctx_t *self) {
     return 0;
 }
 
-int regex_report(void *ctx, rules_t *rules, prose_t prose, sink_t sink) {
+int regex_init(void **ctx, rules_t *rules, sink_t sink) {
+    *ctx = calloc(1, sizeof(regex_linter_ctx_t));
+
     int res = 0;
-    regex_linter_ctx_t *self = (regex_linter_ctx_t *)ctx;
+    regex_linter_ctx_t *self = (regex_linter_ctx_t *)*ctx;
     self->rules = rules;
 
     // Compile our regexes
@@ -71,20 +74,31 @@ int regex_report(void *ctx, rules_t *rules, prose_t prose, sink_t sink) {
     const char *const *crs = (const char *const *)regexes;
     const unsigned *crids = (const unsigned *)rids;
 
-    self->prose = &prose;
-    self->sink = &sink;
+    self->sink = sink;
 
-    hs_database_t *db;
     hs_compile_error_t *comp_err;
     if (hs_compile_multi(crs, NULL, crids, cur, HS_MODE_BLOCK, NULL,
-                         &db, &comp_err) != HS_SUCCESS) {
+                         &self->db, &comp_err) != HS_SUCCESS) {
         hs_free_compile_error(comp_err);
         res = 1;
         goto free_arrs;
     }
 
+free_arrs:
+    free(rids);
+free_rxs:
+    free(regexes);
+free_nil:
+    return res;
+}
+
+int regex_report(void *ctx, prose_t prose) {
+    regex_linter_ctx_t *self = (regex_linter_ctx_t *)ctx;
+    int res = 0;
+    self->prose = &prose;
+
     hs_scratch_t *s = NULL;
-    if (hs_alloc_scratch(db, &s) != HS_SUCCESS) {
+    if (hs_alloc_scratch(self->db, &s) != HS_SUCCESS) {
         res = 1;
         goto free_db;
     }
@@ -94,7 +108,7 @@ int regex_report(void *ctx, rules_t *rules, prose_t prose, sink_t sink) {
         goto free_scr;
     }
 
-    if (hs_scan(db, prose.text, strlen(prose.text), 0, s, handle_match,
+    if (hs_scan(self->db, prose.text, strlen(prose.text), 0, s, handle_match,
                 ctx) != HS_SUCCESS) {
         res = 1;
         goto free_linums;
@@ -105,26 +119,17 @@ free_linums:
 free_scr:
     hs_free_scratch(s);
 free_db:
-    hs_free_database(db);
-free_arrs:
-    free(rids);
-free_rxs:
-    free(regexes);
-free_nil:
     return res;
 }
 
-hs_error_t build_regex(const char *const *patterns, unsigned int numpats,
-                       hs_database_t **db, hs_compile_error_t *err) {
-    unsigned int flags[1] = { HS_MODE_BLOCK };
-    hs_error_t res = hs_compile_multi(patterns, flags, NULL, numpats, HS_MODE_BLOCK, NULL, db, &err);
-    return res;
+void regex_deinit(void *ctx) {
+    regex_linter_ctx_t *self = (regex_linter_ctx_t *)ctx;
+    hs_free_database(self->db);
+    free(self);
 }
 
 linter_t regex_linter() {
-    regex_linter_ctx_t *ctx = calloc(1, sizeof(regex_linter_ctx_t));
-    linter_t linter = { ctx, regex_report };
-
-    return linter;
+    linter_t l = { NULL, regex_init, regex_report, regex_deinit };
+    return l;
 }
 

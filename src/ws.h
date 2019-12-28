@@ -53,7 +53,9 @@ typedef struct sink {
 // Linters
 typedef struct linter {
     void *ctx;
-    int (*report)(void *ctx, rules_t *, prose_t, sink_t);
+    int (*init_ctx)(void **ctx, rules_t *, sink_t);
+    int (*report)(void *ctx, prose_t);
+    void (*deinit_ctx)(void *ctx);
 } linter_t;
 
 #endif
