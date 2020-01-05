@@ -23,7 +23,7 @@ pub const StderrSink = struct {
     sink: Sink = Sink{.handleFn = handle},
     
     pub fn handle(s: *Sink, l: Lint) anyerror!void {
-        std.debug.warn("{}:{}:{} {}:{}\n", l.prose.name, l.line, l.col, l.rule.name, l.rule.mesg);
+        std.debug.warn("{}:{}:{} {}:{}\n", .{l.prose.name, l.line, l.col, l.rule.name, l.rule.mesg});
     }
 };
 

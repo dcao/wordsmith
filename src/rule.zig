@@ -136,7 +136,7 @@ pub fn printRules(rules: std.ArrayList(Rule)) void {
     var cur: usize = 0;
     while (cur < rules.len) {
         const r = rules.at(cur);
-        std.debug.warn("{} | {} | {} | {}\n", r.name, r.lint, r.mesg, r.payl);
+        std.debug.warn("{} | {} | {} | {}\n", .{r.name, r.lint, r.mesg, r.payl});
         cur += 1;
     }
 }

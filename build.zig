@@ -13,6 +13,7 @@ pub fn build(b: *Builder) anyerror!void {
     const ctx = try getContext(b);
     try linkStdCpp(b, exe, ctx);
     exe.linkSystemLibrary("libhs");
+    exe.setLinkEhFrameHdr(true);
 
     exe.install();
 
@@ -195,14 +196,14 @@ fn addCxxKnownPath(
 ) !void {
     const path_padded = try b.exec(&[_][]const u8{
         ctx.cxx_compiler,
-        b.fmt("-print-file-name={}", objname),
+        b.fmt("-print-file-name={}", .{objname}),
     });
     const path_unpadded = mem.tokenize(path_padded, "\r\n").next().?;
     if (mem.eql(u8, path_unpadded, objname)) {
         if (errtxt) |msg| {
-            warn("{}", msg);
+            warn("{}", .{msg});
         } else {
-            warn("Unable to determine path to {}\n", objname);
+            warn("Unable to determine path to {}\n", .{objname});
         }
         return error.RequiredLibraryNotFound;
     }

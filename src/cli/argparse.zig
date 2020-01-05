@@ -69,7 +69,7 @@ fn Context(comptime T: type) type {
 /// Parse arbitrary string arguments subject to the passed struct's format and parsing options.
 pub fn parseArgsListOpt(comptime T: type, args: []const []const u8, options: ArgParseOptions) ArgParseError!T {
     if (args.len < 1) {
-        log("\nFirst argument should be the program name\n");
+        log("\nFirst argument should be the program name\n", .{});
         return error.CalledWithoutAnyArguments;
     }
     const info = @typeInfo(T).Struct;
@@ -136,7 +136,7 @@ pub fn parseArgsListOpt(comptime T: type, args: []const []const u8, options: Arg
 
                             if (ctx.arg_i + len >= ctx.args.len) {
                                 usage(T, ctx.args);
-                                log("\nMust provide {} values for array argument '{}'\n", usize(len), name);
+                                log("\nMust provide {} values for array argument '{}'\n", .{usize(len), name});
                                 return error.NotEnoughArrayArguments;
                             }
 
@@ -149,7 +149,7 @@ pub fn parseArgsListOpt(comptime T: type, args: []const []const u8, options: Arg
                         },
                         .Pointer => |pointerType| {
                             // TODO: split next arg on ','?
-                            if (builtin.TypeInfo.Pointer.Size(pointerType.size) == .One) {
+                            if (pointerType.size == .One) {
                                 @compileError("Pointers are not supported as argument types.");
                             }
                             var gotString = false;
@@ -221,7 +221,7 @@ pub fn parseArgsListOpt(comptime T: type, args: []const []const u8, options: Arg
         } else {
             // TODO: Support positional args
             usage(T, args);
-            log("\nUnexpected argument '{}'\n", arg);
+            log("\nUnexpected argument '{}'\n", .{arg});
             return error.UnexpectedArgument;
         }
     }
@@ -229,7 +229,7 @@ pub fn parseArgsListOpt(comptime T: type, args: []const []const u8, options: Arg
     for (requiredArgs) |req_arg| {
         if (req_arg) |rarg| {
             usage(T, args);
-            log("\nMissing required argument '{}'\n", rarg);
+            log("\nMissing required argument '{}'\n", .{rarg});
             return error.MissingRequiredArgument;
         }
     }
@@ -239,14 +239,14 @@ pub fn parseArgsListOpt(comptime T: type, args: []const []const u8, options: Arg
 
 fn usage(comptime T: type, args: []const []const u8) void {
     const info = @typeInfo(T).Struct;
-    log("Usage: {}\n", args[0]);
+    log("Usage: {}\n", .{args[0]});
     inline for (info.fields) |field| {
         const name = field.name;
-        log("--{}", name);
+        log("--{}", .{name});
         if (field.field_type != ?bool) {
-            log("=({})", @typeName(field.field_type));
+            log("=({})", .{@typeName(field.field_type)});
         }
-        log("\n");
+        log("\n", .{});
     }
 }
 
@@ -271,7 +271,7 @@ fn parseValueForField(
     if (startsWith(value, "--")) {
         if (!ctx.silent) {
             usage(T, ctx.args);
-            log("\nExpected value for argument '{}', found argument '{}'\n", name, value);
+            log("\nExpected value for argument '{}', found argument '{}'\n", .{name, value});
         }
         return error.ExpectedArgument;
     }
@@ -280,7 +280,7 @@ fn parseValueForField(
             return std.fmt.parseInt(FT, value, 10) catch |e| {
                 if (!ctx.silent) {
                     usage(T, ctx.args);
-                    log("\nExpected {} for '{}', found '{}'\n", @typeName(FT), name, value);
+                    log("\nExpected {} for '{}', found '{}'\n", .{@typeName(FT), name, value});
                 }
                 return error.CouldNotParseInteger;
             };
@@ -289,7 +289,7 @@ fn parseValueForField(
             return std.fmt.parseFloat(FT, value) catch |e| {
                 if (!ctx.silent) {
                     usage(T, ctx.args);
-                    log("\nExpected {} for '{}', found '{}'\n", @typeName(FT), name, value);
+                    log("\nExpected {} for '{}', found '{}'\n", .{@typeName(FT), name, value});
                 }
                 return error.CouldNotParseFloat;
             };

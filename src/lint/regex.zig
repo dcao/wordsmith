@@ -146,7 +146,7 @@ pub const RegexLinter = struct {
         const comp_err = c.hs_compile_multi(rs, null, ids_ptr, nrs, c.HS_MODE_BLOCK, null, &db, err_ptr);
         if (comp_err != c.HS_SUCCESS) {
             if (comp_err == c.HS_COMPILER_ERROR) {
-                std.debug.warn("{}", err);
+                std.debug.warn("{}", .{err});
             }
             _ = c.hs_free_compile_error(err);
             return hsConvertErr(comp_err);

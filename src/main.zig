@@ -23,16 +23,12 @@ pub fn main() anyerror!u8 {
     const name_stdin = "stdin";
     
     var text: []const u8 = undefined;
-    var name: []u8 = [_]u8{};
+    var name: []u8 = &[_]u8{};
     defer alloc.free(text);
 
     const BufInStream = io.BufferedInStream(fs.File.InStream.Error);
     if (args.file) |path| {
-        const cwd = try process.getCwdAlloc(alloc);
-        defer alloc.free(cwd);
-        var dir = try fs.Dir.open(alloc, cwd);
-        defer dir.close();
-        const f = try dir.openRead(path);
+        const f = try fs.cwd().openFile(path, .{});
         defer f.close();
 
         const file_limit = 2000000000;
@@ -41,7 +37,7 @@ pub fn main() anyerror!u8 {
         name = try alloc.alloc(u8, path.len);
         copy(u8, name, path);
     } else {
-        const stdin = &BufInStream.init(&(try io.getStdIn()).inStream().stream).stream;
+        const stdin = &BufInStream.init(&(io.getStdIn()).inStream().stream).stream;
 
         const stdin_limit = 1000000000;
         text = try stdin.readAllAlloc(alloc, stdin_limit);
@@ -52,15 +48,11 @@ pub fn main() anyerror!u8 {
 
     const prose = Prose{.text = text, .name = name};
 
-    var rules: []u8 = [_]u8{};
+    var rules: []u8 = &[_]u8{};
     defer alloc.free(rules);
     // TODO: Room for improving efficiency here; reusing scratch space? streaming? something
     for (args.rules) |rf| {
-        const cwd = try process.getCwdAlloc(alloc);
-        defer alloc.free(cwd);
-        var dir = try fs.Dir.open(alloc, cwd);
-        defer dir.close();
-        const f = try dir.openRead(rf);
+        const f = try fs.cwd().openFile(rf, .{});
         defer f.close();
 
         const file_limit = 2000000000;
