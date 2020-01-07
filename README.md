@@ -21,13 +21,15 @@ tenets in its design:
     $ ws -r r1.txt -r r2.txt in1.txt in2.txt # two rules files, two input files
     ```
 
-  - Be extensible. wordsmith is written in C to enable fast compilation
-    via C. Thus, we can, at runtime, compile C extensions and include
-    them.
+  - Be extensible. wordsmith will integrate libtcc to enable fast C extension
+    compilation.
 
 ## Dependencies
 
-hyperscan
+- a c compiler
+- meson
+- hyperscan
+- optionally, nix
 
 ## LICENSE
 

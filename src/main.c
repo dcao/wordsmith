@@ -77,8 +77,10 @@ int main(int argc, char **argv) {
     int fs = 0;
 
     sink_t sink = stderr_sink;
-    linter_t linter = regex_linter();
-    if (linter_init(&linter, &rules, sink) != 0) {
+    linter_t rlinter = regex_linter();
+    lintset_t lintset = { &rlinter };
+    int ls_size = 1;
+    if (lintset_init(lintset, ls_size, &rules, sink) != 0) {
         err = 1;
         goto free_rules;
     }
@@ -90,17 +92,17 @@ int main(int argc, char **argv) {
         char *file = read_file(arg, &len);
         if (!file) {
             err = 1;
-            goto linter_deinit;
+            goto lintset_deinit;
         }
         prose_t prose = { file, arg };
 
-        int fin = linter_report(&linter, prose);
+        int fin = lintset_report(lintset, ls_size, prose);
         
         free(file);
 
         if (fin != 0) {
             err = 1;
-            goto linter_deinit;
+            goto lintset_deinit;
         }
     }
 
@@ -121,17 +123,17 @@ int main(int argc, char **argv) {
 
         prose_t prose = { input, name };
 
-        int fin = linter_report(&linter, prose);
+        int fin = lintset_report(lintset, ls_size, prose);
 
         if (fin != 0) {
             err = 1;
-            goto linter_deinit;
+            goto lintset_deinit;
         }
     }
 
 
-linter_deinit:
-    linter_deinit(&linter);
+lintset_deinit:
+    lintset_deinit(lintset, ls_size);
 free_rules:
     free_rules(&rules);
     if (err == 0) {
