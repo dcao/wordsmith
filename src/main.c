@@ -10,6 +10,7 @@
 #include "optparse.h"
 
 #define STDIN_MAX 1000
+#define STREAM_BUF_LEN 4096
 
 int main(int argc, char **argv) {
     struct optparse_long longopts[] = {
@@ -22,6 +23,9 @@ int main(int argc, char **argv) {
     char *arg;
     int option;
     struct optparse options;
+
+    setvbuf(stderr, NULL, _IOFBF, STREAM_BUF_LEN);
+    setvbuf(stdout, NULL, _IOFBF, STREAM_BUF_LEN);
 
     char *rbuf = NULL;
 
@@ -133,6 +137,7 @@ int main(int argc, char **argv) {
 
 
 lintset_deinit:
+    free(rbuf);
     lintset_deinit(lintset, ls_size);
 free_rules:
     free_rules(&rules);

@@ -45,7 +45,7 @@ int build_linums(regex_linter_ctx_t *self) {
     return 0;
 }
 
-// TODO: Existence checking
+// TODO: Consistency, conditional checks
 int regex_init(void **ctx, rules_t *rules, sink_t sink) {
     *ctx = calloc(1, sizeof(regex_linter_ctx_t));
 

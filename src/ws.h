@@ -44,6 +44,7 @@ typedef struct {
 } lint_t;
 
 // TODO: Better errors out of the handle fns
+//       Maybe have a void *err param?
 // Sinks
 typedef struct sink {
     void *ctx;
