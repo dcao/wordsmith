@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
-#include "ws.h"
+#include <ws.h>
 
 #define RULE_DELIM ';'
 
@@ -62,6 +62,8 @@ void str_esc(char delim, char **src, char *dest) {
         }
         (*src)++;
     }
+
+    dest[valid_chars] = 0;
 }
 
 void free_rules(rules_t *x) {
@@ -102,7 +104,7 @@ rule_error_t build_rules(char delim, char *rules_txt, rules_t *rules) {
             err = INVALID_RULE;
             goto free_rules;
         }
-        cur_rule.name = calloc(name_size + 1, sizeof(char));
+        cur_rule.name = malloc((name_size + 1) * sizeof(char));
         if (!cur_rule.name) {
             // Allocation failure
             err = RULE_ALLOC;
@@ -116,7 +118,7 @@ rule_error_t build_rules(char delim, char *rules_txt, rules_t *rules) {
             err = INVALID_RULE;
             goto free_name;
         }
-        cur_rule.rule = calloc(rule_size + 1, sizeof(char));
+        cur_rule.rule = malloc((rule_size + 1) * sizeof(char));
         if (!cur_rule.rule) {
             // Allocation failure
             err = RULE_ALLOC;
@@ -132,7 +134,7 @@ rule_error_t build_rules(char delim, char *rules_txt, rules_t *rules) {
             err = INVALID_RULE;
             goto free_rule;
         }
-        cur_rule.mesg = calloc(message_size + 1, sizeof(char));
+        cur_rule.mesg = malloc((message_size + 1) * sizeof(char));
         if (!cur_rule.mesg) {
             // Allocation failure
             err = RULE_ALLOC;
@@ -147,7 +149,7 @@ rule_error_t build_rules(char delim, char *rules_txt, rules_t *rules) {
             err = INVALID_RULE;
             goto free_mesg;
         }
-        cur_rule.payl = calloc(payload_size + 1, sizeof(char));
+        cur_rule.payl = malloc((payload_size + 1) * sizeof(char));
         if (!cur_rule.payl) {
             // Allocation failure
             err = RULE_ALLOC;

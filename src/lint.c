@@ -14,9 +14,6 @@ void linter_deinit(linter_t *linter) {
 }
 
 // Lintsets
-// A lintset is an array of pointers to linters
-typedef linter_t *lintset_t[];
-
 int lintset_init(lintset_t lintset, int size, rules_t *rules, sink_t sink) {
     for (int i = 0; i < size; i++) {
         if (linter_init(lintset[i], rules, sink)) {

@@ -5,6 +5,11 @@
 #define str(x) #x
 #define xstr(x) str(x)
 
+// Utilities for bit vectors
+#define setbit(A,k)     ( A[(k/32)] |= (1 << (k%32)) )         
+#define clearbit(A,k)   ( A[(k/32)] &= ~(1 << (k%32)) )         
+#define testbit(A,k)    ( A[(k/32)] & (1 << (k%32)) )               
+
 // Prose
 typedef struct {
     char *text;
@@ -34,6 +39,9 @@ typedef enum {
     INVALID_RULE,
 } rule_error_t;
 
+rule_error_t build_rules(char delim, char *rules_txt, rules_t *rules);
+void free_rules (rules_t *rules);
+
 // Lints
 typedef struct {
     unsigned long long offset;
@@ -58,5 +66,12 @@ typedef struct linter {
     int (*report)(void *ctx, prose_t);
     void (*deinit_ctx)(void *ctx);
 } linter_t;
+
+// Lintsets
+// A lintset is an array of pointers to linters
+typedef linter_t *lintset_t[];
+int lintset_init(lintset_t lintset, int size, rules_t *rules, sink_t sink);
+int lintset_report(lintset_t lintset, int size, prose_t prose);
+void lintset_deinit(lintset_t lintset, int size);
 
 #endif

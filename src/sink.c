@@ -1,4 +1,7 @@
 #include "ws.h"
+#include <stdio.h>
+#include <stddef.h>
+#include <stdlib.h>
 
 int stderr_handle(void *ctx, lint_t lint) {
     fprintf(stderr, "%s:%ld:%ld %s:%s\n", lint.prose.name, lint.line, lint.col,

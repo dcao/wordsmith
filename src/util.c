@@ -44,7 +44,7 @@ static char *read_file(const char *inputFN, unsigned int *length) {
         return NULL;
     }
 
-    char *inputData = malloc(dataLen);
+    char *inputData = malloc(dataLen + 1);
     if (!inputData) {
         fprintf(stderr, "ERROR: unable to malloc %ld bytes\n", dataLen);
         fclose(f);
@@ -64,6 +64,8 @@ static char *read_file(const char *inputFN, unsigned int *length) {
             return NULL;
         }
     }
+
+    inputData[dataLen] = 0;
 
     fclose(f);
 

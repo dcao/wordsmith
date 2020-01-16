@@ -1,5 +1,5 @@
 #include "hs.h"
-#include "../sink.c"
+#include <ws.h>
 #include <string.h>
 
 typedef struct {
@@ -12,12 +12,28 @@ typedef struct {
     prose_t *prose;
     sink_t sink;
     linum *linums;
+    int *consi_map;
+    // occur is a bit vector, recording if a regex has been seen yet.
+    int *occur;
     hs_database_t *db;
 } regex_linter_ctx_t;
 
 int handle_match(unsigned id, unsigned long long from, unsigned long long to,
                  unsigned flags, void *ctx) {
     regex_linter_ctx_t *self = (regex_linter_ctx_t *)ctx;
+    setbit(self->occur, id);
+
+    if (self->consi_map[id] != -1) {
+        if (testbit(self->occur, self->consi_map[id])) {
+            goto report_lint;
+        }
+    } else {
+        goto report_lint;
+    }
+
+    return 0;
+
+report_lint: ;
     lint_t l = { to, self->linums[to].l, self->linums[to].c, *self->prose, self->rules->array[id] };
     sink_handle(&self->sink, l);
 
@@ -47,26 +63,55 @@ int build_linums(regex_linter_ctx_t *self) {
 
 // TODO: Consistency, conditional checks
 int regex_init(void **ctx, rules_t *rules, sink_t sink) {
-    *ctx = calloc(1, sizeof(regex_linter_ctx_t));
+    *ctx = malloc(sizeof(regex_linter_ctx_t));
 
     int res = 0;
     regex_linter_ctx_t *self = (regex_linter_ctx_t *)*ctx;
     self->rules = rules;
 
     // Compile our regexes
-    char **regexes = calloc(rules->used, sizeof(char *));
+    char **regexes = malloc(rules->used * sizeof(char *));
     if (!regexes) {
         res = 1;
         goto free_nil;
     }
-    unsigned *rids = calloc(rules->used, sizeof(unsigned));
+
+    unsigned *rids = malloc(rules->used * sizeof(unsigned));
     if (!rids) {
         res = 1;
         goto free_rxs;
     }
+
+    self->occur = calloc((rules->used / 32 + 1), sizeof(unsigned));
+    if (!self->occur) {
+        res = 1;
+        goto free_rxs;
+    }
+
+    self->consi_map = malloc(rules->used * sizeof(unsigned));
+    if (!self->consi_map) {
+        res = 1;
+        goto free_rxs;
+    }
+
     int cur = 0;
+    int consi_ptr = -1;
     for (int i = 0; i < rules->used; i++) {
         if (strcmp(rules->array[i].rule, "regex") == 0) {
+            self->consi_map[cur] = -1;
+
+            rids[cur] = i;
+            regexes[cur++] = rules->array[i].payl;
+        } else if (strcmp(rules->array[i].rule, "consi") == 0) {
+            // We do this in case there's an odd number of consi rules
+            self->consi_map[cur] = -1;
+            if (consi_ptr != -1) {
+                self->consi_map[consi_ptr] = cur;
+                self->consi_map[cur] = consi_ptr;
+            } else {
+                consi_ptr = cur;
+            }
+            
             rids[cur] = i;
             regexes[cur++] = rules->array[i].payl;
         }
@@ -85,6 +130,7 @@ int regex_init(void **ctx, rules_t *rules, sink_t sink) {
         goto free_arrs;
     }
 
+    // TODO: free new arrs
 free_arrs:
     free(rids);
 free_rxs:

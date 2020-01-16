@@ -1,9 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <ws.h>
+#include <ws_contrib.h>
 #include "util.c"
-#include "rule.c"
-#include "lint.c"
-#include "lint/regex.c"
 
 #define OPTPARSE_IMPLEMENTATION
 #define OPTPARSE_API static
@@ -39,7 +38,6 @@ int main(int argc, char **argv) {
             fprintf(stderr, "wordsmith 0.1.0\n");
             break;
         case 'r': ;
-            // bleh
             unsigned int len;
             char *temp = read_file(options.optarg, &len);
             if (!temp) {
