@@ -21,12 +21,43 @@ tenets in its design:
     $ ws -r r1.txt -r r2.txt in1.txt in2.txt # two rules files, two input files
     ```
 
-  - Be extensible. wordsmith will integrate libtcc to enable fast C extension
-    compilation.
+  - Be extensible. wordsmith integrates libtcc to allow for adding custom
+    linters by specifying them in external C files. As an example:
+
+    ```c
+    // ext.c
+
+    #include <stdlib.h>
+    #include <ws.h>
+
+    // We can specify custom tcc flags
+    #pragma ws tcc -L/home/me/includes
+
+    // init initializes the context of this linter
+    int init(void **ctx, rules_t *rules, sink_t sink) {
+        // initializing or whateva
+    }
+
+    // report goes through a piece of prose, reporting any lints
+    // to the sink given previously
+    int report(void *ctx, prose_t prose) {
+        // reporting or whateva
+    }
+
+    // deinit frees the context initialize in init
+    void deinit(void *ctx) {
+        // freeing or whateva
+    }
+    ```
+
+    ```console
+    $ ws -e ext.c -r rules.txt prose.txt
+    ```
 
 ## Dependencies
 
 - a c compiler
+- libtcc
 - meson
 - hyperscan
 - optionally, nix
