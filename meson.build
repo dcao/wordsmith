@@ -3,11 +3,12 @@
 project('wordsmith', 'c', version : '0.1.0')
 
 hs = dependency('libhs')
+tcc = dependency('libtcc')
 
 inc = include_directories('include')
 
-lib_src = ['src/prose.c', 'src/lint.c', 'src/sink.c', 'src/rule.c']
-lib = static_library('ws', lib_src, include_directories : inc, install : true)
+lib_src = ['src/prose.c', 'src/ext.c', 'src/lint.c', 'src/sink.c', 'src/rule.c']
+lib = static_library('ws', lib_src, dependencies : tcc, include_directories : inc, install : true)
 
 contrib_src = ['src/sink.c', 'src/lint/regex.c']
 contrib = static_library('ws_contrib',

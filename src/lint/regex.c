@@ -85,13 +85,13 @@ int regex_init(void **ctx, rules_t *rules, sink_t sink) {
     self->occur = calloc((rules->used / 32 + 1), sizeof(unsigned));
     if (!self->occur) {
         res = 1;
-        goto free_rxs;
+        goto free_arrs;
     }
 
     self->consi_map = malloc(rules->used * sizeof(unsigned));
     if (!self->consi_map) {
         res = 1;
-        goto free_rxs;
+        goto free_occur;
     }
 
     int cur = 0;
@@ -127,10 +127,13 @@ int regex_init(void **ctx, rules_t *rules, sink_t sink) {
                          &self->db, &comp_err) != HS_SUCCESS) {
         hs_free_compile_error(comp_err);
         res = 1;
-        goto free_arrs;
+        goto free_consi;
     }
 
-    // TODO: free new arrs
+free_consi:
+    free(self->consi_map);
+free_occur:
+    free(self->occur);
 free_arrs:
     free(rids);
 free_rxs:

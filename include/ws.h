@@ -59,6 +59,8 @@ typedef struct sink {
     int (*handle)(void *ctx, lint_t);
 } sink_t;
 
+int sink_handle(sink_t *sink, lint_t lint);
+
 // Linters
 typedef struct linter {
     void *ctx;
@@ -68,10 +70,32 @@ typedef struct linter {
 } linter_t;
 
 // Lintsets
-// A lintset is an array of pointers to linters
-typedef linter_t *lintset_t[];
-int lintset_init(lintset_t lintset, int size, rules_t *rules, sink_t sink);
-int lintset_report(lintset_t lintset, int size, prose_t prose);
-void lintset_deinit(lintset_t lintset, int size);
+
+// A lintset is an array of linters
+typedef struct {
+    linter_t *array;
+    unsigned long used;
+    unsigned long size;
+} lintset_t;
+
+int lintset_create(lintset_t *lintset, unsigned int initial_size);
+int lintset_add(lintset_t *lintset, linter_t linter);
+int lintset_init(lintset_t *lintset, rules_t *rules, sink_t sink);
+int lintset_report(lintset_t *lintset, prose_t prose);
+void lintset_deinit(lintset_t *lintset);
+
+// Extensions
+typedef enum {
+    EXT_OK,
+    TCC_STATE_ERR,
+    TCC_FILE_ERR,
+    TCC_COMPILE_ERR,
+    TCC_RELOC_ERR,
+    LINTER_NOT_FOUND,
+    LINTSET_ERR,
+} ext_error_t;
+
+ext_error_t register_ext_file(lintset_t *lintset, char *fname);
+ext_error_t register_ext_str(lintset_t *lintset, char *str);
 
 #endif

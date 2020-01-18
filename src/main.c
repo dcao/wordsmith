@@ -16,6 +16,7 @@ int main(int argc, char **argv) {
         {"help", 'h', OPTPARSE_NONE},
         {"version", 'v', OPTPARSE_NONE},
         {"rule", 'r', OPTPARSE_REQUIRED},
+        {"ext", 'e', OPTPARSE_REQUIRED},
         {0}
     };
 
@@ -28,20 +29,45 @@ int main(int argc, char **argv) {
 
     char *rbuf = NULL;
 
+    lintset_t lintset;
+    if (lintset_create(&lintset, 1)) {
+        fprintf(stderr, "%s: failed to allocate lintset", argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    int err = 0;
+
     optparse_init(&options, argv);
     while ((option = optparse_long(&options, longopts, NULL)) != -1) {
         switch (option) {
         case 'h':
             fprintf(stderr, "todo: help\n");
+            err = 2;
+            goto free_lintset;
             break;
         case 'v':
             fprintf(stderr, "wordsmith 0.1.0\n");
+            goto free_lintset;
+            break;
+        case 'e':
+            switch (register_ext_file(&lintset, options.optarg)) {
+            case EXT_OK:
+                break;
+            case LINTER_NOT_FOUND:
+                fprintf(stderr, "%s: extension does not specify init, report, and deinit fns\n", argv[0]);
+            default:
+                fprintf(stderr, "%s: unable to register extension %s\n", argv[0], options.optarg);
+                err = EXIT_FAILURE;
+                goto free_lintset;
+            }
             break;
         case 'r': ;
             unsigned int len;
             char *temp = read_file(options.optarg, &len);
             if (!temp) {
-                exit(EXIT_FAILURE);
+                fprintf(stderr, "%s: invalid rules file\n", argv[0]);
+                err = EXIT_FAILURE;
+                goto free_lintset;
             }
 
             if (!rbuf) {
@@ -57,22 +83,23 @@ int main(int argc, char **argv) {
             break;
         case '?':
             fprintf(stderr, "%s: %s\n", argv[0], options.errmsg);
-            exit(EXIT_FAILURE);
+            err = EXIT_FAILURE;
+            goto free_lintset;
         }
     }
 
     if (!rbuf) {
         fprintf(stderr, "%s: no rules passed (-r/--rules)\n", argv[0]);
-        exit(EXIT_FAILURE);
+        err = EXIT_FAILURE;
+        goto free_lintset;
     }
 
     rules_t rules;
     rule_error_t res = build_rules(';', rbuf, &rules);
 
-    int err = 0;
     if (res != RULES_OK) {
         fprintf(stderr, "%s\n", xstr(err));
-        err = 1;
+        err = EXIT_FAILURE;
         goto free_rules;
     }
 
@@ -80,9 +107,12 @@ int main(int argc, char **argv) {
 
     sink_t sink = stderr_sink;
     linter_t rlinter = regex_linter();
-    lintset_t lintset = { &rlinter };
-    int ls_size = 1;
-    if (lintset_init(lintset, ls_size, &rules, sink) != 0) {
+
+    if (lintset_add(&lintset, rlinter)) {
+        err = EXIT_FAILURE;
+    }
+    
+    if (lintset_init(&lintset, &rules, sink) != 0) {
         err = 1;
         goto free_rules;
     }
@@ -94,17 +124,17 @@ int main(int argc, char **argv) {
         char *file = read_file(arg, &len);
         if (!file) {
             err = 1;
-            goto lintset_deinit;
+            goto free_rules;
         }
         prose_t prose = { file, arg };
 
-        int fin = lintset_report(lintset, ls_size, prose);
+        int fin = lintset_report(&lintset, prose);
         
         free(file);
 
         if (fin != 0) {
             err = 1;
-            goto lintset_deinit;
+            goto free_rules;
         }
     }
 
@@ -125,24 +155,23 @@ int main(int argc, char **argv) {
 
         prose_t prose = { input, name };
 
-        int fin = lintset_report(lintset, ls_size, prose);
+        int fin = lintset_report(&lintset, prose);
 
         if (fin != 0) {
             err = 1;
-            goto lintset_deinit;
+            goto free_rules;
         }
     }
 
 
-lintset_deinit:
-    free(rbuf);
-    lintset_deinit(lintset, ls_size);
 free_rules:
     free_rules(&rules);
-    if (err == 0) {
-        exit(EXIT_SUCCESS);
-    } else {
-        exit(EXIT_FAILURE);
+free_lintset:
+    if (rbuf) {
+        free(rbuf);
     }
+
+    lintset_deinit(&lintset);
+    exit(err);
 }
 
