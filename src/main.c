@@ -35,10 +35,14 @@ int main(int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
 
-    mems_t mems;
-    init_mems(&mems, 1);
-
     int err = 0;
+
+    mems_t mems;
+    if (init_mems(&mems, 1)) {
+        fprintf(stderr, "%s: failed to allocate extension memory", argv[0]);
+        err = EXIT_FAILURE;
+        goto free_lintset;
+    }
 
     optparse_init(&options, argv);
     while ((option = optparse_long(&options, longopts, NULL)) != -1) {
@@ -46,11 +50,11 @@ int main(int argc, char **argv) {
         case 'h':
             fprintf(stderr, "todo: help\n");
             err = 2;
-            goto free_lintset;
+            goto free_mems;
             break;
         case 'v':
             fprintf(stderr, "wordsmith 0.1.0\n");
-            goto free_lintset;
+            goto free_mems;
             break;
         case 'e':
             switch (register_ext_file(&lintset, options.optarg, &mems)) {
@@ -61,7 +65,7 @@ int main(int argc, char **argv) {
             default:
                 fprintf(stderr, "%s: unable to register extension %s\n", argv[0], options.optarg);
                 err = EXIT_FAILURE;
-                goto free_lintset;
+                goto free_mems;
             }
             break;
         case 'r': ;
@@ -70,7 +74,7 @@ int main(int argc, char **argv) {
             if (!temp) {
                 fprintf(stderr, "%s: invalid rules file\n", argv[0]);
                 err = EXIT_FAILURE;
-                goto free_lintset;
+                goto free_mems;
             }
 
             if (!rbuf) {
@@ -87,14 +91,14 @@ int main(int argc, char **argv) {
         case '?':
             fprintf(stderr, "%s: %s\n", argv[0], options.errmsg);
             err = EXIT_FAILURE;
-            goto free_lintset;
+            goto free_mems;
         }
     }
 
     if (!rbuf) {
         fprintf(stderr, "%s: no rules passed (-r/--rules)\n", argv[0]);
         err = EXIT_FAILURE;
-        goto free_lintset;
+        goto free_mems;
     }
 
     rules_t rules;
@@ -112,10 +116,13 @@ int main(int argc, char **argv) {
     linter_t rlinter = regex_linter();
 
     if (lintset_add(&lintset, rlinter)) {
+        fprintf(stderr, "%s: failed to add default regex lintset\n", argv[0]);
         err = EXIT_FAILURE;
+        goto free_rules;
     }
     
     if (lintset_init(&lintset, &rules, sink) != 0) {
+        fprintf(stderr, "%s: failed to initialize lintsets\n", argv[0]);
         err = 1;
         goto free_rules;
     }
@@ -169,12 +176,13 @@ int main(int argc, char **argv) {
 
 free_rules:
     free_rules(&rules);
+free_mems:
+    free_mems(&mems);
 free_lintset:
     if (rbuf) {
         free(rbuf);
     }
 
-    free_mems(&mems);
     lintset_deinit(&lintset);
     exit(err);
 }

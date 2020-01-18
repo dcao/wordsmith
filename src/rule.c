@@ -4,20 +4,30 @@
 
 #define RULE_DELIM ';'
 
-void init_rules(rules_t *a, size_t initial_size) {
+int init_rules(rules_t *a, size_t initial_size) {
     a->array = malloc(initial_size * sizeof(rule_t));
+    if (!a->array) {
+        return 1;
+    }
     a->used = 0;
     a->size = initial_size;
+
+    return 0;
 }
 
-void insert_rule(rules_t *a, rule_t element) {
+int insert_rule(rules_t *a, rule_t element) {
     // a->used is the number of used entries, because a->array[a->used++] updates a->used only *after* the array has been accessed.
     // Therefore a->used can go up to a->size 
     if (a->used == a->size) {
         a->size *= 2;
         a->array = realloc(a->array, a->size * sizeof(rule_t));
+        if (!a->array) {
+            return 1;
+        }
     }
     a->array[a->used++] = element;
+
+    return 0;
 }
 
 int field_size(char delim, char *src, char **end) {
@@ -79,15 +89,13 @@ void free_rules(rules_t *x) {
 }
 
 rule_error_t build_rules(char delim, char *rules_txt, rules_t *rules) {
-    init_rules(rules, 16);
+    if (init_rules(rules, 16)) {
+        return RULE_ALLOC;
+    }
 
     // Test our arguments for null-ity
     if (!rules_txt) {
         return NULL_RULES;
-    }
-    if (!rules->array) {
-        // Allocation failure
-        return RULE_ALLOC;
     }
 
     // After this, attempt to create a rule for each line in our rules_txt
@@ -158,7 +166,10 @@ rule_error_t build_rules(char delim, char *rules_txt, rules_t *rules) {
         str_esc(delim, &cur, cur_rule.payl);
         cur++;
 
-        insert_rule(rules, cur_rule);
+        if (insert_rule(rules, cur_rule)) {
+            err = RULE_ALLOC;
+            goto free_rules;
+        }
         continue;
 
     free_mesg:

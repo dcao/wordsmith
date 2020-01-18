@@ -91,14 +91,15 @@ typedef struct {
     unsigned long size;
 } mems_t;
 
-void init_mems(mems_t *a, unsigned int initial_size);
-void add_mem(mems_t *a, void *ptr);
+int init_mems(mems_t *a, unsigned int initial_size);
+int add_mem(mems_t *a, void *ptr);
 void free_mems(mems_t *a);
 
 typedef enum {
     EXT_OK,
     TCC_STATE_ERR,
     TCC_FILE_ERR,
+    MEM_ALLOC_ERR,
     TCC_COMPILE_ERR,
     TCC_RELOC_ERR,
     LINTER_NOT_FOUND,

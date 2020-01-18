@@ -4,18 +4,27 @@
 #include "util.c"
 
 // mems - for dealing with storing memory from tcc states
-void init_mems(mems_t *a, unsigned int initial_size) {
+int init_mems(mems_t *a, unsigned int initial_size) {
     a->array = malloc(initial_size * sizeof(void *));
+    if (!a->array) {
+        return 1;
+    }
     a->used = 0;
     a->size = initial_size;
+
+    return 0;
 }
 
-void add_mem(mems_t *a, void *ptr) {
+int add_mem(mems_t *a, void *ptr) {
     if (a->used == a->size) {
         a->size *= 2;
         a->array = realloc(a->array, a->size * sizeof(void *));
+        if (!a->array) {
+            return 1;
+        }
     }
     a->array[a->used++] = ptr;
+    return 0;
 }
 
 void free_mems(mems_t *x) {
@@ -92,7 +101,10 @@ ext_error_t register_ext_str(lintset_t *lintset, char *str, mems_t *mems) {
 
     void *mem = malloc(size);
     tcc_relocate(s, mem);
-    add_mem(mems, mem);
+
+    if (add_mem(mems, mem)) {
+        return MEM_ALLOC_ERR;
+    }
 
     int (*init)(void **, rules_t *, sink_t) = (int (*)(void **, rules_t *, sink_t)) tcc_get_symbol(s, "init");
     int (*report)(void *, prose_t) = (int (*)(void *, prose_t)) tcc_get_symbol(s, "init");
