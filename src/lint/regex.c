@@ -15,6 +15,7 @@ typedef struct {
     int *consi_map;
     // occur is a bit vector, recording if a regex has been seen yet.
     int *occur;
+    int occur_sz;
     hs_database_t *db;
 } regex_linter_ctx_t;
 
@@ -82,16 +83,17 @@ int regex_init(void **ctx, rules_t *rules, sink_t sink) {
         goto free_rxs;
     }
 
-    self->occur = calloc((rules->used / 32 + 1), sizeof(unsigned));
+    self->occur = malloc((rules->used / 32 + 1) * sizeof(int));
     if (!self->occur) {
         res = 1;
         goto free_arrs;
     }
+    self->occur_sz = rules->used / 32 + 1;
 
-    self->consi_map = malloc(rules->used * sizeof(unsigned));
+    self->consi_map = malloc(rules->used * sizeof(int));
     if (!self->consi_map) {
         res = 1;
-        goto free_occur;
+        goto free_arrs;
     }
 
     int cur = 0;
@@ -127,13 +129,9 @@ int regex_init(void **ctx, rules_t *rules, sink_t sink) {
                          &self->db, &comp_err) != HS_SUCCESS) {
         hs_free_compile_error(comp_err);
         res = 1;
-        goto free_consi;
+        goto free_arrs;
     }
 
-free_consi:
-    free(self->consi_map);
-free_occur:
-    free(self->occur);
 free_arrs:
     free(rids);
 free_rxs:
@@ -146,6 +144,9 @@ int regex_report(void *ctx, prose_t prose) {
     regex_linter_ctx_t *self = (regex_linter_ctx_t *)ctx;
     int res = 0;
     self->prose = &prose;
+
+    // We have to zero our occurrence array.
+    memset(self->occur, 0, self->occur_sz * sizeof(int));
 
     hs_scratch_t *s = NULL;
     if (hs_alloc_scratch(self->db, &s) != HS_SUCCESS) {
@@ -174,6 +175,15 @@ free_db:
 
 void regex_deinit(void *ctx) {
     regex_linter_ctx_t *self = (regex_linter_ctx_t *)ctx;
+
+    if (self->consi_map) {
+        free(self->consi_map);
+    }
+
+    if (self->occur) {
+        free(self->occur);
+    }
+
     hs_free_database(self->db);
     free(self);
 }

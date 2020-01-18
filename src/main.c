@@ -35,6 +35,9 @@ int main(int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
 
+    mems_t mems;
+    init_mems(&mems, 1);
+
     int err = 0;
 
     optparse_init(&options, argv);
@@ -50,7 +53,7 @@ int main(int argc, char **argv) {
             goto free_lintset;
             break;
         case 'e':
-            switch (register_ext_file(&lintset, options.optarg)) {
+            switch (register_ext_file(&lintset, options.optarg, &mems)) {
             case EXT_OK:
                 break;
             case LINTER_NOT_FOUND:
@@ -171,6 +174,7 @@ free_lintset:
         free(rbuf);
     }
 
+    free_mems(&mems);
     lintset_deinit(&lintset);
     exit(err);
 }

@@ -3,7 +3,31 @@
 #include <string.h>
 #include "util.c"
 
-ext_error_t register_ext_file(lintset_t *lintset, char *fname) {
+// mems - for dealing with storing memory from tcc states
+void init_mems(mems_t *a, unsigned int initial_size) {
+    a->array = malloc(initial_size * sizeof(void *));
+    a->used = 0;
+    a->size = initial_size;
+}
+
+void add_mem(mems_t *a, void *ptr) {
+    if (a->used == a->size) {
+        a->size *= 2;
+        a->array = realloc(a->array, a->size * sizeof(void *));
+    }
+    a->array[a->used++] = ptr;
+}
+
+void free_mems(mems_t *x) {
+    for (size_t i = 0; i < x->used; i++) {
+        free(x->array[i]);
+    }
+    free(x->array);
+    x->used = x->size = 0;
+}
+
+
+ext_error_t register_ext_file(lintset_t *lintset, char *fname, mems_t *mems) {
     // This just reads the file then passes it to register_ext_str
     unsigned int len;
     char *file = read_file(fname, &len);
@@ -11,14 +35,14 @@ ext_error_t register_ext_file(lintset_t *lintset, char *fname) {
         return TCC_FILE_ERR;
     }
 
-    ext_error_t res = register_ext_str(lintset, file);
+    ext_error_t res = register_ext_str(lintset, file, mems);
 
     free(file);
 
     return res;
 }
 
-ext_error_t register_ext_str(lintset_t *lintset, char *str) {
+ext_error_t register_ext_str(lintset_t *lintset, char *str, mems_t *mems) {
     TCCState *s = tcc_new();
     if (!s) {
         return TCC_STATE_ERR;
@@ -60,9 +84,15 @@ ext_error_t register_ext_str(lintset_t *lintset, char *str) {
         return TCC_COMPILE_ERR;
     }
 
-    if (tcc_relocate(s, TCC_RELOCATE_AUTO) < 0) {
+    int size = tcc_relocate(s, NULL);
+
+    if (size < 0) {
         return TCC_RELOC_ERR;  
     }
+
+    void *mem = malloc(size);
+    tcc_relocate(s, mem);
+    add_mem(mems, mem);
 
     int (*init)(void **, rules_t *, sink_t) = (int (*)(void **, rules_t *, sink_t)) tcc_get_symbol(s, "init");
     int (*report)(void *, prose_t) = (int (*)(void *, prose_t)) tcc_get_symbol(s, "init");
@@ -78,8 +108,7 @@ ext_error_t register_ext_str(lintset_t *lintset, char *str) {
         return LINTSET_ERR;
     }
 
-    // // A problem: these functions in the linter become inaccessible after this function returns
-    // tcc_delete(s);
+    tcc_delete(s);
 
     return EXT_OK;
 }

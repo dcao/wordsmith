@@ -85,6 +85,16 @@ int lintset_report(lintset_t *lintset, prose_t prose);
 void lintset_deinit(lintset_t *lintset);
 
 // Extensions
+typedef struct {
+    void **array;
+    unsigned long used;
+    unsigned long size;
+} mems_t;
+
+void init_mems(mems_t *a, unsigned int initial_size);
+void add_mem(mems_t *a, void *ptr);
+void free_mems(mems_t *a);
+
 typedef enum {
     EXT_OK,
     TCC_STATE_ERR,
@@ -95,7 +105,7 @@ typedef enum {
     LINTSET_ERR,
 } ext_error_t;
 
-ext_error_t register_ext_file(lintset_t *lintset, char *fname);
-ext_error_t register_ext_str(lintset_t *lintset, char *str);
+ext_error_t register_ext_file(lintset_t *lintset, char *fname, mems_t *mems);
+ext_error_t register_ext_str(lintset_t *lintset, char *str, mems_t *mems);
 
 #endif
