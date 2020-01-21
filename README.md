@@ -1,6 +1,6 @@
 # wordsmith
 
-is a forthcoming prose-checking tool written in C, which follows the following
+is a prose-checking tool written in C, which follows the following
 tenets in its design:
 
   - Be fast. wordsmith uses the hyperscan regex library and tries to keep as
@@ -28,7 +28,6 @@ tenets in its design:
     // ext.c
 
     #include <stdlib.h>
-    #include <ws.h>
 
     // We can specify custom tcc flags
     #pragma ws tcc -L/home/me/includes

@@ -89,6 +89,15 @@ ext_error_t register_ext_str(lintset_t *lintset, char *str, mems_t *mems) {
 
     tcc_set_output_type(s, TCC_OUTPUT_MEMORY);
 
+    // To avoid having to force extension authors to include a wordsmith header, we simply
+    // reproduce the needed API that extensions need through defined symbols.
+    tcc_define_symbol(s, "rule_t", "struct { char *name; char *rule; char *mesg; char *payl; }");
+    tcc_define_symbol(s, "rules_t", "struct { rule_t *array; unsigned long used; unsigned long size; }");
+    tcc_define_symbol(s, "prose_t", "struct { char *text; char *name; }");
+    tcc_define_symbol(s, "lint_t", "struct { unsigned long long offset; unsigned long line; unsigned long col; prose_t prose; rule_t rule; }");
+    tcc_define_symbol(s, "sink_t", "struct { void *ctx; int (*handle)(void *ctx, lint_t); }");
+    tcc_define_symbol(s, "sink_handle(sink, lint)", "sink->handle(sink->ctx, lint)");
+
     if (tcc_compile_string(s, str) < 0) {
         return TCC_COMPILE_ERR;
     }
@@ -107,8 +116,8 @@ ext_error_t register_ext_str(lintset_t *lintset, char *str, mems_t *mems) {
     }
 
     int (*init)(void **, rules_t *, sink_t) = (int (*)(void **, rules_t *, sink_t)) tcc_get_symbol(s, "init");
-    int (*report)(void *, prose_t) = (int (*)(void *, prose_t)) tcc_get_symbol(s, "init");
-    void (*deinit)(void *) = (void (*)(void *)) tcc_get_symbol(s, "init");
+    int (*report)(void *, prose_t) = (int (*)(void *, prose_t)) tcc_get_symbol(s, "report");
+    void (*deinit)(void *) = (void (*)(void *)) tcc_get_symbol(s, "deinit");
 
     if (!init || !report || !deinit) {
         return LINTER_NOT_FOUND;

@@ -19,6 +19,7 @@ contrib = static_library('ws_contrib',
 
 install_headers('include/ws.h')
 install_headers('include/ws_contrib.h')
+install_man('doc/ws.1')
 
 exe = executable('ws',
                  'src/main.c',

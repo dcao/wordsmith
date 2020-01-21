@@ -1,0 +1,114 @@
+= ws(1)
+:doctype: manpage
+:docdate: 2020-01-20
+:manmanual: General Commands Manual
+
+== NAME
+
+ws - the hacker's prose linter
+
+== SYNOPSIS
+
+*ws* (-h | --help)
+
+*ws* (-v | --version)
+
+*ws* [_OPTIONS_] *-r* _RULEFILE_ ... [_PATH_ ...]
+
+*command* | *ws* [_OPTIONS_] *-r* _RULEFILE_ ...
+
+== DESCRIPTION
+
+*ws* is a linter for prose, designed to check prose files for problems with style and consistency. *ws* reads rules from every _RULEFILE_ passed in and uses them to check the files specified by _PATH_.
+
+If a file is not passed in, *ws* will read from stdin until EOF is reached.
+
+== OPTIONS
+
+*-e, --ext* _EXTFILE_::
+  Adds the linter extension _EXTFILE_ to the next invocation of *ws*. Can be invoked multiple times to add multiple linter extensions.
+
+*-r, --rule* _RULEFILE_::
+  Adds the rule file _RULEFILE_ to the next invocation of *ws*. Can be invoked multiple times to add multiple rule files.
+
+*-h, --help*::
+  Prints help on *ws* and exits.
+
+*-v, --version*::
+  Prints the version and exits.
+
+== RULES
+
+*ws* does not come with a default set of rules, and will only check for the rules dictated by the rule files passed in with the *-r* flag. A rule file can have any file extension.
+
+=== SYNTAX
+
+Each rule consists of four sections separated by semicolons: the name of the rule, the rule type to be used for the rule, the message to be printed if the rule matches something in a piece of prose, and the "payload" to pass to the linter which determines what the linter should look for in the prose. The backslash can be used as an escape character to include a semicolon, newline, or backslash in a particular section. An example rule file looks like this:
+
+....
+dcao.either;regex;don't use either;either
+dcao.Wordsmith;regex;don't capitalize Wordsmith;Wordsmith
+....
+
+=== DEFAULT RULE TYPES
+    
+*ws* comes with a number of default rule types which are included out-of-the-box, with no additional extensions required.
+
+*regex*::
+  Matches a regex in a piece of prose. Regexes follow PCRE syntax.
+
+*consi*::
+  Checks to make sure that only one of two regexes matches in a piece of prose. This linter requires two rules to be typed in, and the checker will ensure that only one out of those two matches in a piece of prose. If a consistency rule is provided without another matching consistency rule, it will be ignored. For example:
+
+....
+dcao.adviser;consi;used adviser when advisor was previously used;adviser
+dcao.advisor;consi;used advisor when adviser was previously used;advisor
+dcao.blah;consi;blah;blah
+....
+
+  In this example, the last consistency check rule will be thrown out.
+
+== EXTENSIONS
+
+To allow for the easier addition of custom linters, *ws* allows for extension files which add linters to ws. An example extension file which does nothing is shown below:
+
+....
+#include <stdlib.h>
+
+int init(void **ctx, rules_t *rules, sink_t sink) {
+    return 0;
+}
+
+int report(void *ctx, prose_t prose) {
+    return 0;
+}
+
+void deinit(void *ctx) {}
+....
+
+Every extension file must define three functions:
+
+*init*:: This function initializes the state of the linter, using the passed-in array of rules to determine what the linter should be looking for in a given piece of prose. The function is also given a sink which should be used for outputting any matches during lint reporting.
+
+*report*:: This function actully scans the prose for anything which may cause a lint to be reported, using the sink from linter initialization to report said matches.
+
+*deinit*:: This function frees any resources allocated by the linter during initialization or reporting.
+
+A number of types and functions are defined via preprocessor directives in all extension files:
+
+*rule_t*:: A struct representing a rule, containing a *name*, *rule*, message (*mesg*), and payload (*payl*).
+
+*rules_t*:: An array of rules - the actual array is contained in the *array* field.
+
+*prose_t*:: A piece of prose with some *text* and a *name*.
+
+*lint_t*:: A lint to report, containing a byte *offset*, a *line* number, a *col* number, the *prose* which it was found in, and the *rule* which matched.
+
+*sink_t*:: A sink to report lints to. Generally linters should not be creating or modifying sinks.
+
+*sink_handle(sink, lint)*:: A convenience function which reports a *lint* to a given *sink*.
+
+== AUTHORS
+
+Created and maintained by David Cao <david@cao.sh>. For more information about development, see https://github.com/dcao/wordsmith.
+

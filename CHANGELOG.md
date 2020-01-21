@@ -2,5 +2,12 @@
 
 ## Unreleased
 
-An initial release
+## 0.1.0
 
+Initial release.
+
+### Added
+
+  - Regex and consistency checking.
+  
+  - Extensions.

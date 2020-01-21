@@ -1,0 +1,17 @@
+[binaries]
+c = '/nix/store/1r3pi29jagqxq4jkr1q1lz7z3x2apx11-emscripten-1.38.28/bin/emcc'
+cpp = '/nix/store/1r3pi29jagqxq4jkr1q1lz7z3x2apx11-emscripten-1.38.28/bin/em++'
+ar = '/nix/store/1r3pi29jagqxq4jkr1q1lz7z3x2apx11-emscripten-1.38.28/bin/emar'
+ranlib = '/nix/store/1r3pi29jagqxq4jkr1q1lz7z3x2apx11-emscripten-1.38.28/bin/emranlib'
+pkgconfig = ['/nix/store/1r3pi29jagqxq4jkr1q1lz7z3x2apx11-emscripten-1.38.28/bin/emconfigure', 'pkg-config']
+file_packager = ['/home/david/.nix-profile/bin/python', '/nix/store/1r3pi29jagqxq4jkr1q1lz7z3x2apx11-emscripten-1.38.28/share/emscripten/tools/file_packager.py']
+
+[properties]
+root='/nix/store/1r3pi29jagqxq4jkr1q1lz7z3x2apx11-emscripten-1.38.28/share/emscripten/system'
+needs_exe_wrapper=true
+
+[host_machine]
+system = 'emscripten'
+cpu_family = 'wasm'
+cpu = 'wasm32'
+endian = 'little'

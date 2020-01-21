@@ -11,6 +11,10 @@
 #define STDIN_MAX 1000
 #define STREAM_BUF_LEN 4096
 
+void usage(void) {
+    fprintf(stderr, "usage: ws [OPTIONS] -r RULEFILE ... [PATH ...]\n");
+}
+
 int main(int argc, char **argv) {
     struct optparse_long longopts[] = {
         {"help", 'h', OPTPARSE_NONE},
@@ -48,7 +52,7 @@ int main(int argc, char **argv) {
     while ((option = optparse_long(&options, longopts, NULL)) != -1) {
         switch (option) {
         case 'h':
-            fprintf(stderr, "todo: help\n");
+            usage();
             err = 2;
             goto free_mems;
             break;
@@ -90,6 +94,7 @@ int main(int argc, char **argv) {
             break;
         case '?':
             fprintf(stderr, "%s: %s\n", argv[0], options.errmsg);
+            usage();
             err = EXIT_FAILURE;
             goto free_mems;
         }
@@ -97,6 +102,7 @@ int main(int argc, char **argv) {
 
     if (!rbuf) {
         fprintf(stderr, "%s: no rules passed (-r/--rules)\n", argv[0]);
+        usage();
         err = EXIT_FAILURE;
         goto free_mems;
     }
