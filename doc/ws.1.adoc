@@ -48,6 +48,7 @@ Each rule consists of four sections separated by semicolons: the name of the rul
 ....
 dcao.either;regex;don't use either;either
 dcao.Wordsmith;regex;don't capitalize Wordsmith;Wordsmith
+whatever;regex;rule names can be anything!;whatever
 ....
 
 === DEFAULT RULE TYPES
@@ -58,15 +59,13 @@ dcao.Wordsmith;regex;don't capitalize Wordsmith;Wordsmith
   Matches a regex in a piece of prose. Regexes follow PCRE syntax.
 
 *consi*::
-  Checks to make sure that only one of two regexes matches in a piece of prose. This linter requires two rules to be typed in, and the checker will ensure that only one out of those two matches in a piece of prose. If a consistency rule is provided without another matching consistency rule, it will be ignored. For example:
+  Checks to make sure that only one of two regexes matches in a piece of prose. This linter requires two rules to be typed in, and the checker will ensure that only one out of those two matches in a piece of prose. If a consistency rule is provided without another matching consistency rule, it will be ignored. In the following example, the last consistency rule is ignored:
 
 ....
-dcao.adviser;consi;used adviser when advisor was previously used;adviser
-dcao.advisor;consi;used advisor when adviser was previously used;advisor
-dcao.blah;consi;blah;blah
+adviser;consi;used adviser when advisor was previously used;adviser
+advisor;consi;used advisor when adviser was previously used;advisor
+blah;consi;this rule is ignored!;ignored
 ....
-
-  In this example, the last consistency check rule will be thrown out.
 
 == EXTENSIONS
 

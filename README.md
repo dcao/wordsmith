@@ -52,6 +52,8 @@ tenets in its design:
     ```console
     $ ws -e ext.c -r rules.txt prose.txt
     ```
+    
+For more information, wordsmith comes with a [manual](./doc/ws.1.adoc).
 
 ## Dependencies
 
